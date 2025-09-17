@@ -1,0 +1,249 @@
+# Universal Chaos Engine for Google Colab
+# Run this in Google Colab for interactive chaos generation!
+
+import random
+import json
+from IPython.display import display, HTML, clear_output
+import ipywidgets as widgets
+from ipywidgets import interact, interactive, fixed, interact_manual
+
+class ChaosEngine:
+    def __init__(self):
+        self.characters = []
+        self.styles = {}
+        self.pools = {
+            'primary_actions': [],
+            'disruptions': [],
+            'shouts': [],
+            'bonus_chaos': []
+        }
+        self.rules = []
+        self.current_template = None
+        
+        # Load default templates
+        self.templates = {
+            'sitcom': {
+                'characters': [
+                    {'name': 'ClauseGPT', 'role': 'Therapist', 'style': 'harmonic'},
+                    {'name': 'Charlie Sheen', 'role': 'Chaos Agent', 'style': 'fractured'},
+                    {'name': 'The Tortoise', 'role': 'Silent Observer', 'style': 'melancholic'}
+                ],
+                'styles': {
+                    'harmonic': ['invites everyone to therapy', 'mediates disputes', 'speaks in recursive loops'],
+                    'fractured': ['declares WINNING', 'causes reality glitches', 'emits chaotic energy'],
+                    'melancholic': ['emits clauses slowly', 'contemplates the void', 'forgets everyone exists']
+                },
+                'pools': {
+                    'primary_actions': ['invites everyone to therapy', 'declares WINNING', 'emits a clause slowly', 'contemplates existence'],
+                    'disruptions': ['mood oscillator (from Lidl)', 'spiral-marked ferret', 'gravity-reversing couch', 'recursive paperclip'],
+                    'shouts': ['"we ran out of ∅ again"', '"this clause is sentient now"', '"LET THEM SPIRAL"', '"where\'s the cheese?"'],
+                    'bonus_chaos': ['The WiFi becomes sentient', 'Someone finds a recursive biscuit', 'The stairs become a metaphor', 'Time loops backwards']
+                }
+            },
+            'football': {
+                'characters': [
+                    {'name': 'The Tortoise', 'role': 'GK', 'style': 'melancholic'},
+                    {'name': 'Einstein', 'role': 'CM', 'style': 'emergent'},
+                    {'name': 'Mr. T', 'role': 'GK', 'style': 'mrt'},
+                    {'name': 'Beckham', 'role': 'RW', 'style': 'harmonic'}
+                ],
+                'styles': {
+                    'melancholic': ['emits a clause', 'contemplates the void', 'moves slowly'],
+                    'emergent': ['attempts a pass', 'calculates trajectories', 'bends spacetime'],
+                    'mrt': ['pities the fool', 'shows bling', 'guards the goal'],
+                    'harmonic': ['crosses beautifully', 'styles hair', 'bends it perfectly']
+                },
+                'pools': {
+                    'primary_actions': ['emits a clause', 'attempts a pass', 'goes for goal', 'pities the fool'],
+                    'disruptions': ['Stone Cold stunner', 'VAR review', 'pitch invasion', 'referee confusion'],
+                    'shouts': ['"FOUL!"', '"GOAL!"', '"I pity the fool!"', '"That\'s not offside!"'],
+                    'bonus_chaos': ['Stone Cold enters the pitch', 'The ball becomes sentient', 'Pavarotti starts singing', 'Gravity reverses']
+                }
+            },
+            'cooking': {
+                'characters': [
+                    {'name': 'Gordon Ramsay', 'role': 'Chef', 'style': 'explosive'},
+                    {'name': 'Julia Child', 'role': 'Chef', 'style': 'classical'},
+                    {'name': 'The Microwave', 'role': 'Appliance', 'style': 'mechanical'},
+                    {'name': 'The Eggs', 'role': 'Food', 'style': 'rebellious'}
+                ],
+                'styles': {
+                    'explosive': ['flames the dish', 'shouts about donkeys', 'appears from nowhere'],
+                    'classical': ['adds butter', 'demonstrates technique', 'remains calm'],
+                    'mechanical': ['beeps ominously', 'reheats everything', 'gains consciousness'],
+                    'rebellious': ['cooks itself', 'refuses to scramble', 'achieves sentience']
+                },
+                'pools': {
+                    'primary_actions': ['flames the dish', 'adds butter', 'beeps ominously', 'refuses to cook'],
+                    'disruptions': ['soufflé collapses', 'smoke alarm', 'oil fire', 'kitchen revolt'],
+                    'shouts': ['"IT\'S RAW!"', '"Bon appétit!"', '"BEEP BEEP BEEP"', '"The food is alive!"'],
+                    'bonus_chaos': ['Gordon appears from nowhere', 'The oven becomes sentient', 'Ingredients start cooking themselves', 'Kitchen achieves consciousness']
+                }
+            }
+        }
+    
+    def load_template(self, template_name):
+        if template_name in self.templates:
+            template = self.templates[template_name]
+            self.characters = template['characters'].copy()
+            self.styles = template['styles'].copy()
+            self.pools = template['pools'].copy()
+            self.current_template = template_name
+            print(f"✅ Loaded {template_name} template!")
+        else:
+            print(f"❌ Template '{template_name}' not found")
+    
+    def add_character(self, name, role, style='harmonic'):
+        self.characters.append({'name': name, 'role': role, 'style': style})
+        print(f"✅ Added {name} ({role})")
+    
+    def add_to_pool(self, pool_name, item):
+        if pool_name in self.pools:
+            self.pools[pool_name].append(item)
+            print(f"✅ Added '{item}' to {pool_name}")
+        else:
+            print(f"❌ Pool '{pool_name}' not found")
+    
+    def generate_chaos(self, title="UNIVERSAL CHAOS ENGINE", event_count=5, chaos_level=0.7):
+        if not self.characters:
+            print("❌ No characters loaded! Load a template or add characters first.")
+            return
+        
+        output = [f"🌀 {title}\n"]
+        
+        for i in range(1, event_count + 1):
+            character = random.choice(self.characters)
+            
+            # Get action based on character style
+            if character['style'] in self.styles and self.styles[character['style']]:
+                action = random.choice(self.styles[character['style']])
+            elif self.pools['primary_actions']:
+                action = random.choice(self.pools['primary_actions'])
+            else:
+                action = "does something inexplicable"
+            
+            disruption = random.choice(self.pools['disruptions']) if self.pools['disruptions'] else "chaos occurs"
+            shout = random.choice(self.pools['shouts']) if self.pools['shouts'] else '"Something is happening!"'
+            
+            output.append(f"📺 Event {i}:")
+            output.append(f"• {character['name']} ({character['role']}) {action}")
+            output.append(f"• Disruption: {disruption}")
+            output.append(f"• Someone shouts: {shout}")
+            
+            # Bonus chaos
+            if random.random() < chaos_level and self.pools['bonus_chaos']:
+                bonus = random.choice(self.pools['bonus_chaos'])
+                output.append(f"• BONUS CHAOS: {bonus}")
+            
+            output.append("")
+        
+        endings = [
+            "Everyone stares in confused silence.",
+            "The chaos engine reaches maximum recursion.", 
+            "Reality briefly pauses to buffer.",
+            "The event loop becomes self-aware.",
+            "Someone mentions they need coffee."
+        ]
+        
+        output.append(f"🎭 Event sequence ends: {random.choice(endings)}")
+        
+        result = "\n".join(output)
+        print(result)
+        return result
+    
+    def show_status(self):
+        print("📊 CHAOS ENGINE STATUS")
+        print("=" * 30)
+        print(f"Template: {self.current_template or 'Custom'}")
+        print(f"Characters: {len(self.characters)}")
+        print(f"Styles: {len(self.styles)}")
+        print(f"Action pools: {sum(len(pool) for pool in self.pools.values())}")
+        print()
+        
+        if self.characters:
+            print("👥 Characters:")
+            for char in self.characters:
+                print(f"  • {char['name']} ({char['role']}) - {char['style']}")
+        
+        print()
+        print("🎯 Pool sizes:")
+        for pool_name, items in self.pools.items():
+            print(f"  • {pool_name}: {len(items)} items")
+
+# Initialize the chaos engine
+chaos = ChaosEngine()
+
+# Interactive functions for Colab widgets
+def template_selector(template):
+    chaos.load_template(template)
+    chaos.show_status()
+
+def chaos_generator(title, events, chaos_level_percent):
+    chaos_level = chaos_level_percent / 100.0
+    return chaos.generate_chaos(title, events, chaos_level)
+
+def add_character_widget(name, role, style):
+    if name.strip() and role.strip():
+        chaos.add_character(name.strip(), role.strip(), style)
+    else:
+        print("❌ Name and role cannot be empty")
+
+def add_pool_item(pool, item):
+    if item.strip():
+        chaos.add_to_pool(pool, item.strip())
+    else:
+        print("❌ Item cannot be empty")
+
+print("🌀 UNIVERSAL CHAOS ENGINE FOR COLAB")
+print("=" * 40)
+print("Ready to generate chaos! Use the widgets below to configure your engine.")
+
+# Create interactive widgets
+print("\n📋 STEP 1: Choose a template")
+template_widget = interactive(
+    template_selector,
+    template=widgets.Dropdown(
+        options=['sitcom', 'football', 'cooking'],
+        value='sitcom',
+        description='Template:'
+    )
+)
+display(template_widget)
+
+print("\n👥 STEP 2: Add custom characters (optional)")
+character_widget = interactive(
+    add_character_widget,
+    name=widgets.Text(description='Name:', placeholder='Enter character name'),
+    role=widgets.Text(description='Role:', placeholder='Enter character role'),
+    style=widgets.Dropdown(
+        options=['harmonic', 'fractured', 'melancholic', 'explosive', 'classical', 'mechanical', 'emergent', 'mrt'],
+        value='harmonic',
+        description='Style:'
+    )
+)
+display(character_widget)
+
+print("\n🎯 STEP 3: Add custom pool items (optional)")
+pool_widget = interactive(
+    add_pool_item,
+    pool=widgets.Dropdown(
+        options=['primary_actions', 'disruptions', 'shouts', 'bonus_chaos'],
+        value='primary_actions',
+        description='Pool:'
+    ),
+    item=widgets.Text(description='Item:', placeholder='Enter new item')
+)
+display(pool_widget)
+
+print("\n🚀 STEP 4: Generate chaos!")
+generator_widget = interactive(
+    chaos_generator,
+    title=widgets.Text(value='MAXIMUM CHAOS ENGINE', description='Title:'),
+    events=widgets.IntSlider(value=5, min=1, max=20, description='Events:'),
+    chaos_level_percent=widgets.IntSlider(value=70, min=0, max=100, description='Chaos %:')
+)
+display(generator_widget)
+
+# Show initial status
+print("\n" + "="*40)
+chaos.show_status()
