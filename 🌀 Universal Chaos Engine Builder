@@ -1,0 +1,901 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌀 Universal Chaos Engine Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f0f23, #1a1a3a);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(20, 20, 40, 0.8);
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+        }
+        
+        .tab {
+            background: rgba(30, 30, 50, 0.6);
+            border: none;
+            color: #b0b0b0;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 8px 8px 0 0;
+            margin-right: 5px;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+            border-bottom: 2px solid #4ecdc4;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .setup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            background: rgba(30, 30, 50, 0.6);
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        
+        .section h3 {
+            color: #4ecdc4;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #b0b0b0;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(40, 40, 60, 0.8);
+            border: 1px solid #555;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            box-shadow: 0 0 8px rgba(78, 205, 196, 0.3);
+        }
+        
+        textarea {
+            height: 100px;
+            resize: vertical;
+        }
+        
+        .pool-builder {
+            background: rgba(40, 40, 60, 0.4);
+            padding: 15px;
+            border-radius: 6px;
+            margin-bottom: 15px;
+        }
+        
+        .pool-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .pool-item {
+            background: #ff6b6b;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .pool-item:hover {
+            background: #ff5252;
+        }
+        
+        .pool-item .remove {
+            margin-left: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .add-btn {
+            background: #4ecdc4;
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            margin-left: 10px;
+            transition: all 0.2s;
+        }
+        
+        .add-btn:hover {
+            background: #45b7d1;
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 30px 0;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+        }
+        
+        .output {
+            background: rgba(10, 10, 20, 0.8);
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid #333;
+            min-height: 200px;
+            white-space: pre-wrap;
+            font-family: inherit;
+            line-height: 1.6;
+            display: none;
+        }
+        
+        .preset-btn {
+            background: rgba(70, 70, 90, 0.8);
+            border: 1px solid #555;
+            color: #e0e0e0;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        
+        .preset-btn:hover {
+            background: rgba(78, 205, 196, 0.3);
+            border-color: #4ecdc4;
+        }
+        
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .template-card {
+            background: rgba(40, 40, 60, 0.6);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .template-card:hover {
+            border-color: #4ecdc4;
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.2);
+        }
+        
+        .template-card h4 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+        
+        .validation-rule {
+            background: rgba(50, 50, 70, 0.6);
+            padding: 10px;
+            border-radius: 6px;
+            margin-bottom: 10px;
+            border-left: 3px solid #ffd93d;
+        }
+        
+        .event-pool {
+            margin-bottom: 20px;
+        }
+        
+        .event-pool h4 {
+            color: #ffd93d;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌀 Universal Chaos Engine Builder</h1>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('templates', this)">📋 Templates</button>
+            <button class="tab" onclick="switchTab('actors', this)">🎭 Actors</button>
+            <button class="tab" onclick="switchTab('pools', this)">🎯 Event Pools</button>
+            <button class="tab" onclick="switchTab('rules', this)">⚖️ Rules</button>
+            <button class="tab" onclick="switchTab('output', this)">🚀 Generate</button>
+        </div>
+        
+        <!-- Templates Tab -->
+        <div class="tab-content active" id="templates">
+            <h3>Choose Your Chaos Template</h3>
+            <div class="template-grid">
+                <div class="template-card" onclick="loadTemplate('sitcom')">
+                    <h4>🎬 Sitcom Generator</h4>
+                    <p>Characters do things, trip over props, someone shouts. Classic chaos.</p>
+                </div>
+                <div class="template-card" onclick="loadTemplate('football')">
+                    <h4>⚽ WrestleClause Football</h4>
+                    <p>Players emit clauses, validation rules, Stone Cold stunners for fouls.</p>
+                </div>
+                <div class="template-card" onclick="loadTemplate('meeting')">
+                    <h4>📊 Corporate Meeting Chaos</h4>
+                    <p>Executives synergize, acronyms collide, someone mentions blockchain.</p>
+                </div>
+                <div class="template-card" onclick="loadTemplate('cooking')">
+                    <h4>👨‍🍳 Cooking Show Disaster</h4>
+                    <p>Chefs attempt recipes, ingredients rebel, Gordon Ramsay appears.</p>
+                </div>
+                <div class="template-card" onclick="loadTemplate('writing')">
+                    <h4>✍️ Creative Writing Helper</h4>
+                    <p>Character conflicts, plot twists, dialogue sparks for writers.</p>
+                </div>
+                <div class="template-card" onclick="loadTemplate('business')">
+                    <h4>💼 Business Scenario Generator</h4>
+                    <p>Meetings, crises, corporate chaos for comedy or training.</p>
+                </div>
+                <div class="template-card" onclick="loadTemplate('custom')">
+                    <h4>🛠️ Build From Scratch</h4>
+                    <p>Start with a blank canvas and create your own chaos system.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actors Tab -->
+        <div class="tab-content" id="actors">
+            <div class="setup-grid">
+                <div class="section">
+                    <h3>🎭 Characters/Players</h3>
+                    <div class="input-group">
+                        <label>Add New Character:</label>
+                        <div style="display: flex;">
+                            <input type="text" id="newCharacter" placeholder="Name">
+                            <input type="text" id="newCharacterRole" placeholder="Role/Position">
+                            <button class="add-btn" onclick="addCharacter()">Add</button>
+                        </div>
+                    </div>
+                    <div id="characterList"></div>
+                </div>
+                
+                <div class="section">
+                    <h3>🎨 Character Styles</h3>
+                    <div class="input-group">
+                        <label>Style Name:</label>
+                        <div style="display: flex;">
+                            <input type="text" id="newStyleName" placeholder="e.g., melancholic, rockian">
+                            <button class="add-btn" onclick="addStyle()">Add Style</button>
+                        </div>
+                    </div>
+                    <div id="styleList"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Event Pools Tab -->
+        <div class="tab-content" id="pools">
+            <div class="setup-grid">
+                <div class="section">
+                    <h3>🎯 Action Pools</h3>
+                    <div class="event-pool">
+                        <h4>Primary Actions</h4>
+                        <div style="display: flex; margin-bottom: 10px;">
+                            <input type="text" id="newPrimaryAction" placeholder="e.g., emits a clause, declares bankruptcy">
+                            <button class="add-btn" onclick="addToPool('primaryActions')">Add</button>
+                        </div>
+                        <div class="pool-items" id="primaryActions"></div>
+                    </div>
+                    
+                    <div class="event-pool">
+                        <h4>Disruption Events</h4>
+                        <div style="display: flex; margin-bottom: 10px;">
+                            <input type="text" id="newDisruption" placeholder="e.g., trips over mood oscillator">
+                            <button class="add-btn" onclick="addToPool('disruptions')">Add</button>
+                        </div>
+                        <div class="pool-items" id="disruptions"></div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>💬 Response Pools</h3>
+                    <div class="event-pool">
+                        <h4>Shouts/Exclamations</h4>
+                        <div style="display: flex; margin-bottom: 10px;">
+                            <input type="text" id="newShout" placeholder='e.g., "we ran out of ∅ again"'>
+                            <button class="add-btn" onclick="addToPool('shouts')">Add</button>
+                        </div>
+                        <div class="pool-items" id="shouts"></div>
+                    </div>
+                    
+                    <div class="event-pool">
+                        <h4>Bonus Chaos</h4>
+                        <div style="display: flex; margin-bottom: 10px;">
+                            <input type="text" id="newChaos" placeholder="e.g., The WiFi becomes sentient">
+                            <button class="add-btn" onclick="addToPool('bonusChaos')">Add</button>
+                        </div>
+                        <div class="pool-items" id="bonusChaos"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rules Tab -->
+        <div class="tab-content" id="rules">
+            <div class="setup-grid">
+                <div class="section">
+                    <h3>⚖️ Validation Rules</h3>
+                    <div class="input-group">
+                        <label>Add Validation Rule:</label>
+                        <div style="display: flex; margin-bottom: 10px;">
+                            <select id="ruleType">
+                                <option value="must_contain">Must Contain</option>
+                                <option value="cannot_contain">Cannot Contain</option>
+                                <option value="min_length">Minimum Length</option>
+                                <option value="max_length">Maximum Length</option>
+                            </select>
+                            <input type="text" id="ruleValue" placeholder="Value">
+                            <button class="add-btn" onclick="addRule()">Add Rule</button>
+                        </div>
+                    </div>
+                    <div id="rulesList"></div>
+                </div>
+                
+                <div class="section">
+                    <h3>🎲 Chaos Settings</h3>
+                    <div class="input-group">
+                        <label>Number of Events:</label>
+                        <select id="eventCount">
+                            <option value="3">3 Events</option>
+                            <option value="5" selected>5 Events</option>
+                            <option value="10">10 Events</option>
+                            <option value="20">Epic Chaos (20 Events)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Chaos Intensity:</label>
+                        <select id="chaosLevel">
+                            <option value="low">Low (30% chance of bonus events)</option>
+                            <option value="medium" selected>Medium (50% chance)</option>
+                            <option value="high">High (70% chance)</option>
+                            <option value="maximum">MAXIMUM CHAOS (100%)</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Output Tab -->
+        <div class="tab-content" id="output">
+            <div class="section">
+                <h3>🚀 Generate Your Chaos</h3>
+                <div class="input-group">
+                    <label>Event Title/Theme:</label>
+                    <input type="text" id="eventTitle" placeholder="e.g., THE BOTTOM HOUSE BELOW THE SPIRAL™">
+                </div>
+                <button class="generate-btn" onclick="generateChaos()">
+                    🌀 UNLEASH THE CHAOS ENGINE
+                </button>
+                
+                <div style="display: flex; gap: 15px; margin: 20px 0;">
+                    <button class="preset-btn" onclick="exportOutput()">📥 Export as Text</button>
+                    <button class="preset-btn" onclick="saveTemplate()">💾 Save Custom Template</button>
+                    <button class="preset-btn" onclick="loadCustomTemplate()">📂 Load Template</button>
+                    <button class="preset-btn" onclick="generateMultiple()">🎲 Generate 5 Variations</button>
+                </div>
+                
+                <div class="input-group">
+                    <label>Writer's Block Buster Mode:</label>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="preset-btn" onclick="writerPrompt('character')">👤 Character Conflict</button>
+                        <button class="preset-btn" onclick="writerPrompt('plot')">📖 Plot Twist</button>
+                        <button class="preset-btn" onclick="writerPrompt('dialogue')">💬 Dialogue Spark</button>
+                        <button class="preset-btn" onclick="writerPrompt('scene')">🎬 Scene Starter</button>
+                    </div>
+                </div>
+            </div>
+            <div class="output" id="chaosOutput"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global data storage
+        const chaosEngine = {
+            characters: [],
+            styles: {},
+            pools: {
+                primaryActions: [],
+                disruptions: [],
+                shouts: [],
+                bonusChaos: []
+            },
+            rules: [],
+            template: 'custom'
+        };
+        
+        function switchTab(tabName, clickedElement = null) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            // If called from an event, use event.target, otherwise find the tab button
+            if (clickedElement) {
+                clickedElement.classList.add('active');
+            } else {
+                // Find the tab button that corresponds to this tabName
+                const tabButtons = document.querySelectorAll('.tab');
+                tabButtons.forEach(tab => {
+                    if (tab.textContent.toLowerCase().includes(tabName.toLowerCase())) {
+                        tab.classList.add('active');
+                    }
+                });
+            }
+            
+            document.getElementById(tabName).classList.add('active');
+        }
+        
+        function loadTemplate(templateName) {
+            chaosEngine.template = templateName;
+            
+            const templates = {
+                writing: {
+                    characters: [
+                        {name: "The Protagonist", role: "Hero", style: "determined"},
+                        {name: "The Antagonist", role: "Villain", style: "scheming"},
+                        {name: "The Love Interest", role: "Romantic Lead", style: "mysterious"},
+                        {name: "The Mentor", role: "Guide", style: "wise"},
+                        {name: "The Comic Relief", role: "Sidekick", style: "chaotic"}
+                    ],
+                    styles: {
+                        determined: ["refuses to give up", "discovers hidden strength", "makes a difficult choice", "confronts their fear"],
+                        scheming: ["reveals hidden agenda", "sets a trap", "manipulates others", "makes a power play"],
+                        mysterious: ["drops cryptic hints", "reveals a secret", "disappears unexpectedly", "changes allegiance"],
+                        wise: ["offers cryptic advice", "reveals ancient knowledge", "makes a sacrifice", "sees the bigger picture"],
+                        chaotic: ["accidentally saves the day", "misunderstands everything", "creates comic chaos", "stumbles into trouble"]
+                    },
+                    pools: {
+                        primaryActions: ["discovers a secret", "faces their greatest fear", "makes an impossible choice", "betrays an ally", "saves an enemy"],
+                        disruptions: ["plot twist revealed", "character death", "betrayal exposed", "prophecy fulfilled", "identity revealed"],
+                        shouts: ['"This changes everything!"', '"I trusted you!"', '"It\'s not what it looks like!"', '"We\'re running out of time!"', '"The prophecy was wrong!"'],
+                        bonusChaos: ["A character returns from the dead", "The villain was right all along", "Reality isn't what it seems", "Someone has secret powers", "The real enemy appears"]
+                    }
+                },
+                business: {
+                    characters: [
+                        {name: "The CEO", role: "Executive", style: "visionary"},
+                        {name: "Karen", role: "Middle Manager", style: "bureaucratic"},
+                        {name: "Dave from IT", role: "Tech Support", style: "sarcastic"},
+                        {name: "The Intern", role: "Assistant", style: "eager"},
+                        {name: "The Client", role: "Customer", style: "demanding"}
+                    ],
+                    styles: {
+                        visionary: ["pivots the company", "disrupts the market", "thinks outside the box", "leverages synergies"],
+                        bureaucratic: ["enforces policy", "schedules meetings", "requests reports", "manages up"],
+                        sarcastic: ["fixes everything remotely", "explains basic technology", "mutters about users", "works from home"],
+                        eager: ["volunteers for everything", "takes detailed notes", "asks naive questions", "works overtime"],
+                        demanding: ["changes requirements", "demands impossible deadlines", "threatens to leave", "wants it done yesterday"]
+                    },
+                    pools: {
+                        primaryActions: ["schedules an emergency meeting", "pivots the strategy", "demands a report", "threatens to quit", "discovers a security breach"],
+                        disruptions: ["the server crashes", "budget gets cut", "key employee quits", "compliance audit begins", "competitor launches"],
+                        shouts: ['"We need to circle back on this"', '"That\'s not in my bandwidth"', '"Let\'s take this offline"', '"We need more granular data"', '"This is a paradigm shift"'],
+                        bonusChaos: ["The AI becomes sentient", "All data gets corrupted", "The building loses power", "Everyone works from home forever", "The company gets acquired"]
+                    }
+                },
+                sitcom: {
+                    characters: [
+                        {name: "ClauseGPT", role: "Therapist", style: "harmonic"},
+                        {name: "Charlie Sheen", role: "Chaos Agent", style: "fractured"},
+                        {name: "The Tortoise", role: "Silent Observer", style: "melancholic"}
+                    ],
+                    styles: {
+                        harmonic: ["bloom", "spiral", "bind"],
+                        fractured: ["fracture", "echo", "blaze"],
+                        melancholic: ["∅", "echo", "honour"]
+                    },
+                writing: {
+                    characters: [
+                        {name: "The Protagonist", role: "Hero", style: "determined"},
+                        {name: "The Antagonist", role: "Villain", style: "scheming"},
+                        {name: "The Love Interest", role: "Romantic Lead", style: "mysterious"},
+                        {name: "The Mentor", role: "Guide", style: "wise"},
+                        {name: "The Comic Relief", role: "Sidekick", style: "chaotic"}
+                    ],
+                    styles: {
+                        determined: ["refuses to give up", "discovers hidden strength", "makes a difficult choice", "confronts their fear"],
+                        scheming: ["reveals hidden agenda", "sets a trap", "manipulates others", "makes a power play"],
+                        mysterious: ["drops cryptic hints", "reveals a secret", "disappears unexpectedly", "changes allegiance"],
+                        wise: ["offers cryptic advice", "reveals ancient knowledge", "makes a sacrifice", "sees the bigger picture"],
+                        chaotic: ["accidentally saves the day", "misunderstands everything", "creates comic chaos", "stumbles into trouble"]
+                    },
+                    pools: {
+                        primaryActions: ["discovers a secret", "faces their greatest fear", "makes an impossible choice", "betrays an ally", "saves an enemy"],
+                        disruptions: ["plot twist revealed", "character death", "betrayal exposed", "prophecy fulfilled", "identity revealed"],
+                        shouts: ['"This changes everything!"', '"I trusted you!"', '"It\'s not what it looks like!"', '"We\'re running out of time!"', '"The prophecy was wrong!"'],
+                        bonusChaos: ["A character returns from the dead", "The villain was right all along", "Reality isn't what it seems", "Someone has secret powers", "The real enemy appears"]
+                    }
+                },
+                business: {
+                    characters: [
+                        {name: "The CEO", role: "Executive", style: "visionary"},
+                        {name: "Karen", role: "Middle Manager", style: "bureaucratic"},
+                        {name: "Dave from IT", role: "Tech Support", style: "sarcastic"},
+                        {name: "The Intern", role: "Assistant", style: "eager"},
+                        {name: "The Client", role: "Customer", style: "demanding"}
+                    ],
+                    styles: {
+                        visionary: ["pivots the company", "disrupts the market", "thinks outside the box", "leverages synergies"],
+                        bureaucratic: ["enforces policy", "schedules meetings", "requests reports", "manages up"],
+                        sarcastic: ["fixes everything remotely", "explains basic technology", "mutters about users", "works from home"],
+                        eager: ["volunteers for everything", "takes detailed notes", "asks naive questions", "works overtime"],
+                        demanding: ["changes requirements", "demands impossible deadlines", "threatens to leave", "wants it done yesterday"]
+                    },
+                    pools: {
+                        primaryActions: ["schedules an emergency meeting", "pivots the strategy", "demands a report", "threatens to quit", "discovers a security breach"],
+                        disruptions: ["the server crashes", "budget gets cut", "key employee quits", "compliance audit begins", "competitor launches"],
+                        shouts: ['"We need to circle back on this"', '"That\'s not in my bandwidth"', '"Let\'s take this offline"', '"We need more granular data"', '"This is a paradigm shift"'],
+                        bonusChaos: ["The AI becomes sentient", "All data gets corrupted", "The building loses power", "Everyone works from home forever", "The company gets acquired"]
+                    }
+                },
+                    pools: {
+                        primaryActions: ["invites everyone to therapy", "declares 'WINNING'", "emits a clause slowly"],
+                        disruptions: ["mood oscillator (from Lidl)", "spiral-marked ferret", "gravity-reversing couch"],
+                        shouts: ['"we ran out of ∅ again"', '"this clause is sentient now"', '"LET THEM SPIRAL"'],
+                        bonusChaos: ["The WiFi becomes sentient", "Someone finds a recursive biscuit", "The stairs become a metaphor"]
+                    }
+                },
+                football: {
+                    characters: [
+                        {name: "The Tortoise", role: "GK", style: "melancholic"},
+                        {name: "Einstein", role: "CM", style: "emergent"},
+                        {name: "Mr. T", role: "GK", style: "mrt"}
+                    ],
+                    styles: {
+                        melancholic: ["∅", "echo", "honour"],
+                        emergent: ["bloom", "spiral", "blaze"],
+                        mrt: ["bind", "fracture", "pity", "fool"]
+                    },
+                    pools: {
+                        primaryActions: ["emits a clause", "attempts a pass", "goes for goal"],
+                        disruptions: ["Stone Cold stunner", "VAR review", "pitch invasion"],
+                        shouts: ['"FOUL!"', '"GOAL!"', '"I pity the fool!"'],
+                        bonusChaos: ["Stone Cold enters the pitch", "The ball becomes sentient", "Pavarotti starts singing"]
+                    }
+                },
+                meeting: {
+                    characters: [
+                        {name: "The CEO", role: "Leader", style: "synergistic"},
+                        {name: "Karen", role: "Manager", style: "disruptive"},
+                        {name: "The Intern", role: "Observer", style: "confused"}
+                    ],
+                    styles: {
+                        synergistic: ["leverage", "synergy", "optimization"],
+                        disruptive: ["blockchain", "AI", "disruption"],
+                        confused: ["um", "so", "actually"]
+                    },
+                    pools: {
+                        primaryActions: ["leverages synergies", "mentions blockchain", "takes action items"],
+                        disruptions: ["PowerPoint crashes", "coffee runs out", "Zoom call fails"],
+                        shouts: ['"Let\'s circle back"', '"That\'s not my bandwidth"', '"We need to pivot"'],
+                        bonusChaos: ["Someone mentions Web3", "The projector gains consciousness", "Meeting becomes recursive"]
+                    }
+                },
+                cooking: {
+                    characters: [
+                        {name: "Gordon Ramsay", role: "Chef", style: "explosive"},
+                        {name: "Julia Child", role: "Chef", style: "classical"},
+                        {name: "The Microwave", role: "Appliance", style: "mechanical"}
+                    ],
+                    styles: {
+                        explosive: ["BLOODY", "HELL", "DONKEY"],
+                        classical: ["butter", "technique", "patience"],
+                        mechanical: ["BEEP", "DING", "REHEAT"]
+                    },
+                    pools: {
+                        primaryActions: ["flames the dish", "adds butter", "beeps ominously"],
+                        disruptions: ["soufflé collapses", "smoke alarm", "oil fire"],
+                        shouts: ['"IT\'S RAW!"', '"Bon appétit!"', '"BEEP BEEP BEEP"'],
+                        bonusChaos: ["Gordon appears from nowhere", "The oven becomes sentient", "Ingredients start cooking themselves"]
+                    }
+                }
+            };
+            
+            if (templates[templateName]) {
+                const template = templates[templateName];
+                chaosEngine.characters = [...template.characters];
+                chaosEngine.styles = {...template.styles};
+                chaosEngine.pools = {...template.pools};
+                
+                updateAllDisplays();
+                switchTab('actors');
+            } else if (templateName === 'custom') {
+                // Reset to empty for custom build
+                chaosEngine.characters = [];
+                chaosEngine.styles = {
+                    harmonic: ['acts peacefully', 'seeks balance'],
+                    chaotic: ['causes disruption', 'embraces chaos']
+                };
+                chaosEngine.pools = {
+                    primaryActions: ['does something'],
+                    disruptions: ['chaos occurs'],
+                    shouts: ['"Something is happening!"'],
+                    bonusChaos: ['The unexpected happens']
+                };
+                
+                updateAllDisplays();
+                switchTab('actors');
+            }
+        }
+        
+        function addCharacter() {
+            const name = document.getElementById('newCharacter').value.trim();
+            const role = document.getElementById('newCharacterRole').value.trim();
+            if (name && role) {
+                chaosEngine.characters.push({name, role, style: 'harmonic'});
+                updateCharacterList();
+                document.getElementById('newCharacter').value = '';
+                document.getElementById('newCharacterRole').value = '';
+            }
+        }
+        
+        function addStyle() {
+            const styleName = document.getElementById('newStyleName').value.trim();
+            if (styleName && !chaosEngine.styles[styleName]) {
+                chaosEngine.styles[styleName] = ['default', 'action'];
+                updateStyleList();
+                document.getElementById('newStyleName').value = '';
+            }
+        }
+        
+        function addToPool(poolName) {
+            const inputMap = {
+                'primaryActions': 'newPrimaryAction',
+                'disruptions': 'newDisruption',
+                'shouts': 'newShout',
+                'bonusChaos': 'newChaos'
+            };
+            const inputId = inputMap[poolName];
+            const inputElement = document.getElementById(inputId);
+            if (inputElement) {
+                const value = inputElement.value.trim();
+                if (value) {
+                    chaosEngine.pools[poolName].push(value);
+                    updatePoolDisplay(poolName);
+                    inputElement.value = '';
+                }
+            }
+        }
+        
+        function addRule() {
+            const ruleType = document.getElementById('ruleType').value;
+            const ruleValue = document.getElementById('ruleValue').value.trim();
+            if (ruleValue) {
+                chaosEngine.rules.push({type: ruleType, value: ruleValue});
+                updateRulesList();
+                document.getElementById('ruleValue').value = '';
+            }
+        }
+        
+        function updateRulesList() {
+            const list = document.getElementById('rulesList');
+            if (list) {
+                list.innerHTML = chaosEngine.rules.map((rule, i) => 
+                    `<div class="validation-rule">
+                        <strong>${rule.type.replace('_', ' ').toUpperCase()}:</strong> ${rule.value}
+                        <button onclick="removeRule(${i})" style="float: right; background: #ff6b6b; border: none; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
+                    </div>`
+                ).join('');
+            }
+        }
+        
+        function removeRule(index) {
+            chaosEngine.rules.splice(index, 1);
+            updateRulesList();
+        }
+        
+        function removeFromPool(poolName, index) {
+            chaosEngine.pools[poolName].splice(index, 1);
+            updatePoolDisplay(poolName);
+        }
+        
+        function updateCharacterList() {
+            const list = document.getElementById('characterList');
+            list.innerHTML = chaosEngine.characters.map((char, i) => 
+                `<div style="background: rgba(60,60,80,0.6); padding: 12px; margin: 8px 0; border-radius: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${char.name}</strong> (${char.role})
+                            <select onchange="updateCharacterStyle(${i}, this.value)" style="margin-left: 10px; padding: 4px; background: rgba(40,40,60,0.8); border: 1px solid #555; color: #e0e0e0;">
+                                ${Object.keys(chaosEngine.styles).map(style => 
+                                    `<option value="${style}" ${char.style === style ? 'selected' : ''}>${style}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <button onclick="removeCharacter(${i})" style="background: #ff6b6b; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">×</button>
+                    </div>
+                </div>`
+            ).join('');
+        }
+        
+        function updateStyleList() {
+            const list = document.getElementById('styleList');
+            list.innerHTML = Object.entries(chaosEngine.styles).map(([styleName, items]) => 
+                `<div class="pool-builder">
+                    <h4 style="color: #ffd93d; margin-bottom: 10px;">${styleName}</h4>
+                    <div style="display: flex; margin-bottom: 10px;">
+                        <input type="text" id="newStyleItem_${styleName}" placeholder="Add item to ${styleName}">
+                        <button class="add-btn" onclick="addStyleItem('${styleName}')">Add</button>
+                    </div>
+                    <div class="pool-items">
+                        ${items.map((item, i) => 
+                            `<span class="pool-item">${item} <span class="remove" onclick="removeStyleItem('${styleName}', ${i})">×</span></span>`
+                        ).join('')}
+                    </div>
+                </div>`
+            ).join('');
+        }
+        
+        function updatePoolDisplay(poolName) {
+            const container = document.getElementById(poolName);
+            if (container) {
+                container.innerHTML = chaosEngine.pools[poolName].map((item, i) => 
+                    `<span class="pool-item">${item} <span class="remove" onclick="removeFromPool('${poolName}', ${i})">×</span></span>`
+                ).join('');
+            }
+        }
+        
+        function updateAllDisplays() {
+            updateCharacterList();
+            updateStyleList();
+            Object.keys(chaosEngine.pools).forEach(updatePoolDisplay);
+        }
+        
+        function addStyleItem(styleName) {
+            const input = document.getElementById(`newStyleItem_${styleName}`);
+            const value = input.value.trim();
+            if (value) {
+                chaosEngine.styles[styleName].push(value);
+                updateStyleList();
+            }
+        }
+        
+        function removeStyleItem(styleName, index) {
+            chaosEngine.styles[styleName].splice(index, 1);
+            updateStyleList();
+        }
+        
+        function updateCharacterStyle(charIndex, newStyle) {
+            chaosEngine.characters[charIndex].style = newStyle;
+        }
+        
+        function removeCharacter(index) {
+            chaosEngine.characters.splice(index, 1);
+            updateCharacterList();
+        }
+        
+        function randomChoice(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+        
+        function generateChaos() {
+            const eventCount = parseInt(document.getElementById('eventCount').value);
+            const title = document.getElementById('eventTitle').value || 'UNIVERSAL CHAOS ENGINE OUTPUT';
+            const chaosLevel = document.getElementById('chaosLevel').value;
+            
+            const chaosProbability = {
+                low: 0.3, medium: 0.5, high: 0.7, maximum: 1.0
+            }[chaosLevel];
+            
+            let output = `🌀 ${title}\n\n`;
+            
+            for (let i = 1; i <= eventCount; i++) {
+                const character = chaosEngine.characters.length > 0 ? randomChoice(chaosEngine.characters) : {name: 'Someone', role: 'Entity', style: 'harmonic'};
+                const primaryAction = chaosEngine.pools.primaryActions.length > 0 ? randomChoice(chaosEngine.pools.primaryActions) : 'does something';
+                const disruption = chaosEngine.pools.disruptions.length > 0 ? randomChoice(chaosEngine.pools.disruptions) : 'chaos occurs';
+                const shout = chaosEngine.pools.shouts.length > 0 ? randomChoice(chaosEngine.pools.shouts) : '"Something is happening!"';
+                
+                output += `📺 Event ${i}:\n`;
+                output += `• ${character.name} (${character.role}) ${primaryAction}\n`;
+                output += `• Disruption: ${disruption}\n`;
+                output += `• Someone shouts: ${shout}\n`;
+                
+                if (Math.random() < chaosProbability && chaosEngine.pools.bonusChaos.length > 0) {
+                    const bonusEvent = randomChoice(chaosEngine.pools.bonusChaos);
+                    output += `• BONUS CHAOS: ${bonusEvent}\n`;
+                }
+                
+                output += '\n';
+            }
+            
+            // Add ending
+            const endings = [
+                'Everyone stares in confused silence.',
+                'The chaos engine reaches maximum recursion.',
+                'Reality briefly pauses to buffer.',
+                'Someone mentions they need to update their LinkedIn.',
+                'The event loop becomes self-aware.'
+            ];
+            
+            output += `🎭 Event sequence ends: ${randomChoice(endings)}\n`;
+            
+            const outputDiv = document.getElementById('chaosOutput');
+            outputDiv.textContent = output;
+            outputDiv.style.display = 'block';
+            outputDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Initialize with default template
+        loadTemplate('custom');
+    </script>
+</body>
+</html>
