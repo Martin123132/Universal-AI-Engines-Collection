@@ -1,5 +1,5 @@
 # Universal Chaos Engine - User Guide
-
+https://claude.ai/public/artifacts/715211fd-9612-4405-a3ee-3be01929b8a2
 ## What is it?
 The Universal Chaos Engine is a creative tool that generates random combinations of characters, actions, and events to create entertaining scenarios. Think of it as a story generator that works by mixing and matching elements you provide.
 
