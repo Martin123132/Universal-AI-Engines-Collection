@@ -1,0 +1,1419 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🌀 Universal Chaos Engine Builder</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0f0f23, #1a1a3a);
+            color: #e0e0e0;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(20, 20, 40, 0.8);
+            border: 2px solid #333;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 2.5em;
+            margin-bottom: 30px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4, #45b7d1);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #333;
+        }
+        
+        .tab {
+            background: rgba(30, 30, 50, 0.6);
+            border: none;
+            color: #b0b0b0;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: 1em;
+            border-radius: 8px 8px 0 0;
+            margin-right: 5px;
+            transition: all 0.3s;
+        }
+        
+        .tab.active {
+            background: rgba(78, 205, 196, 0.2);
+            color: #4ecdc4;
+            border-bottom: 2px solid #4ecdc4;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .setup-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            background: rgba(30, 30, 50, 0.6);
+            padding: 25px;
+            border-radius: 8px;
+            border: 1px solid #444;
+        }
+        
+        .section h3 {
+            color: #4ecdc4;
+            margin-bottom: 20px;
+            font-size: 1.3em;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        label {
+            display: block;
+            color: #b0b0b0;
+            margin-bottom: 8px;
+            font-size: 0.95em;
+        }
+        
+        input, textarea, select {
+            width: 100%;
+            padding: 12px;
+            background: rgba(40, 40, 60, 0.8);
+            border: 1px solid #555;
+            border-radius: 6px;
+            color: #e0e0e0;
+            font-family: inherit;
+            font-size: 14px;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4ecdc4;
+            box-shadow: 0 0 8px rgba(78, 205, 196, 0.3);
+        }
+        
+        .pool-items {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        
+        .pool-item {
+            background: #ff6b6b;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 15px;
+            font-size: 0.85em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .pool-item:hover {
+            background: #ff5252;
+        }
+        
+        .pool-item .remove {
+            margin-left: 8px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+        
+        .add-btn {
+            background: #4ecdc4;
+            border: none;
+            color: white;
+            padding: 8px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            margin-left: 10px;
+            transition: all 0.2s;
+        }
+        
+        .add-btn:hover {
+            background: #45b7d1;
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: 20px;
+            background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 1.2em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin: 30px 0;
+        }
+        
+        .generate-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(255, 107, 107, 0.3);
+        }
+        
+        .output {
+            background: rgba(10, 10, 20, 0.8);
+            padding: 25px;
+            border-radius: 8px;
+            border: 2px solid #333;
+            min-height: 200px;
+            white-space: pre-wrap;
+            font-family: inherit;
+            line-height: 1.6;
+            display: none;
+        }
+        
+        .preset-btn {
+            background: rgba(70, 70, 90, 0.8);
+            border: 1px solid #555;
+            color: #e0e0e0;
+            padding: 10px 15px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-family: inherit;
+            margin: 5px;
+            transition: all 0.2s;
+        }
+        
+        .preset-btn:hover {
+            background: rgba(78, 205, 196, 0.3);
+            border-color: #4ecdc4;
+        }
+        
+        .template-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+        
+        .template-card {
+            background: rgba(40, 40, 60, 0.6);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #555;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .template-card:hover {
+            border-color: #4ecdc4;
+            box-shadow: 0 4px 15px rgba(78, 205, 196, 0.2);
+        }
+        
+        .template-card h4 {
+            color: #4ecdc4;
+            margin-bottom: 10px;
+        }
+        
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: linear-gradient(45deg, #4ecdc4, #45b7d1);
+            color: white;
+            padding: 15px 25px;
+            border-radius: 8px;
+            box-shadow: 0 4px 20px rgba(78, 205, 196, 0.3);
+            z-index: 1000;
+            transform: translateX(400px);
+            transition: all 0.3s ease;
+            font-weight: bold;
+        }
+        
+        .notification.show {
+            transform: translateX(0);
+        }
+        
+        .image-canvas {
+            position: fixed;
+            top: -10000px;
+            left: -10000px;
+            z-index: -1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🌀 Universal Chaos Engine Builder</h1>
+        
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('templates', this)">📋 Templates</button>
+            <button class="tab" onclick="switchTab('actors', this)">🎭 Actors</button>
+            <button class="tab" onclick="switchTab('pools', this)">🎯 Event Pools</button>
+            <button class="tab" onclick="switchTab('advanced', this)">🚀 Advanced Generators</button>
+            <button class="tab" onclick="switchTab('rules', this)">⚖️ Rules</button>
+            <button class="tab" onclick="switchTab('output', this)">🎲 Generate</button>
+        </div>
+        
+        <!-- Templates Tab -->
+        <div class="tab-content active" id="templates">
+            <h3>Choose Your Chaos Template</h3>
+            <div class="template-grid">
+                <div class="template-card" onclick="loadTemplate('sitcom')">
+                    <h4>🎬 Sitcom Generator</h4>
+                    <p>Characters do things, trip over props, someone shouts. Classic chaos.</p>
+                </div>
+                <div class="template-card" onclick="loadTemplate('business')">
+                    <h4>💼 Silicon Valley Chaos</h4>
+                    <p>Tech CEOs, earnings calls, Twitter meltdowns, product launches gone wrong.</p>
+                </div>
+                <div class="template-card" onclick="loadTemplate('cooking')">
+                    <h4>👨‍🍳 Cooking Show Disaster</h4>
+                    <p>Chefs attempt recipes, ingredients rebel, Gordon Ramsay appears.</p>
+                </div>
+                <div class="template-card" onclick="loadTemplate('writing')">
+                    <h4>✍️ Creative Writing Helper</h4>
+                    <p>Character conflicts, plot twists, dialogue sparks for writers.</p>
+                </div>
+                <div class="template-card" onclick="loadTemplate('custom')">
+                    <h4>🛠️ Build From Scratch</h4>
+                    <p>Start with a blank canvas and create your own chaos system.</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Actors Tab -->
+        <div class="tab-content" id="actors">
+            <div class="setup-grid">
+                <div class="section">
+                    <h3>🎭 Characters/Players</h3>
+                    <div class="input-group">
+                        <label>Add New Character:</label>
+                        <div style="display: flex;">
+                            <input type="text" id="newCharacter" placeholder="Name">
+                            <input type="text" id="newCharacterRole" placeholder="Role/Position">
+                            <button class="add-btn" onclick="addCharacter()">Add</button>
+                        </div>
+                    </div>
+                    <div id="characterList"></div>
+                </div>
+                
+                <div class="section">
+                    <h3>🎨 Character Styles</h3>
+                    <div class="input-group">
+                        <label>Style Name:</label>
+                        <div style="display: flex;">
+                            <input type="text" id="newStyleName" placeholder="e.g., chaotic, determined">
+                            <button class="add-btn" onclick="addStyle()">Add Style</button>
+                        </div>
+                    </div>
+                    <div id="styleList"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Event Pools Tab -->
+        <div class="tab-content" id="pools">
+            <div class="setup-grid">
+                <div class="section">
+                    <h3>🎯 Action Pools</h3>
+                    <div class="input-group">
+                        <label>Primary Actions:</label>
+                        <div style="display: flex; margin-bottom: 10px;">
+                            <input type="text" id="newPrimaryAction" placeholder="e.g., schedules emergency meeting">
+                            <button class="add-btn" onclick="addToPool('primaryActions')">Add</button>
+                        </div>
+                        <div class="pool-items" id="primaryActions"></div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Disruption Events:</label>
+                        <div style="display: flex; margin-bottom: 10px;">
+                            <input type="text" id="newDisruption" placeholder="e.g., stock price crashes">
+                            <button class="add-btn" onclick="addToPool('disruptions')">Add</button>
+                        </div>
+                        <div class="pool-items" id="disruptions"></div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>💬 Response Pools</h3>
+                    <div class="input-group">
+                        <label>Shouts/Exclamations:</label>
+                        <div style="display: flex; margin-bottom: 10px;">
+                            <input type="text" id="newShout" placeholder='e.g., "This is revolutionary!"'>
+                            <button class="add-btn" onclick="addToPool('shouts')">Add</button>
+                        </div>
+                        <div class="pool-items" id="shouts"></div>
+                    </div>
+                    
+                    <div class="input-group">
+                        <label>Bonus Chaos:</label>
+                        <div style="display: flex; margin-bottom: 10px;">
+                            <input type="text" id="newChaos" placeholder="e.g., Elon appears via cybertruck">
+                            <button class="add-btn" onclick="addToPool('bonusChaos')">Add</button>
+                        </div>
+                        <div class="pool-items" id="bonusChaos"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Advanced Generators Tab -->
+        <div class="tab-content" id="advanced">
+            <div class="setup-grid">
+                <div class="section">
+                    <h3>📊 Quarterly Earnings Call Simulator</h3>
+                    <div class="input-group">
+                        <label>Company Stock Ticker:</label>
+                        <input type="text" id="stockTicker" placeholder="e.g., TSLA, AAPL, NVDA" value="CHAOS">
+                    </div>
+                    <div class="input-group">
+                        <label>Quarter Performance:</label>
+                        <select id="quarterPerformance">
+                            <option value="disaster">Total Disaster (-50% revenue)</option>
+                            <option value="bad">Bad Quarter (-15% revenue)</option>
+                            <option value="mixed">Mixed Results</option>
+                            <option value="good">Good Quarter (+20% revenue)</option>
+                            <option value="incredible">Incredible (+100% revenue)</option>
+                        </select>
+                    </div>
+                    <button class="generate-btn" onclick="generateEarningsCall()">
+                        📊 Generate Earnings Call Chaos
+                    </button>
+                </div>
+                
+                <div class="section">
+                    <h3>📰 Press Conference Mode</h3>
+                    <div class="input-group">
+                        <label>Announcement Type:</label>
+                        <select id="announcementType">
+                            <option value="product">New Product Launch</option>
+                            <option value="acquisition">Major Acquisition</option>
+                            <option value="scandal">Damage Control (Scandal)</option>
+                            <option value="ipo">IPO Announcement</option>
+                            <option value="layoffs">Restructuring/Layoffs</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Number of Hostile Questions:</label>
+                        <select id="hostileQuestions">
+                            <option value="3">3 Questions (Softball)</option>
+                            <option value="5" selected>5 Questions (Normal)</option>
+                            <option value="8">8 Questions (Hostile)</option>
+                            <option value="12">12 Questions (Bloodbath)</option>
+                        </select>
+                    </div>
+                    <button class="generate-btn" onclick="generatePressConference()">
+                        📰 Generate Press Conference
+                    </button>
+                </div>
+            </div>
+            
+            <div class="setup-grid">
+                <div class="section">
+                    <h3>🚀 Product Launch Disaster Generator</h3>
+                    <div class="input-group">
+                        <label>Product Name:</label>
+                        <input type="text" id="productName" placeholder="e.g., iChaos Pro Max, Tesla CyberToaster" value="ChaosPhone X">
+                    </div>
+                    <div class="input-group">
+                        <label>Demo Disaster Level:</label>
+                        <select id="disasterLevel">
+                            <option value="minor">Minor Glitches</option>
+                            <option value="major">Major Failures</option>
+                            <option value="catastrophic" selected>Catastrophic Meltdown</option>
+                            <option value="legendary">Legendary Disaster (meme-worthy)</option>
+                        </select>
+                    </div>
+                    <button class="generate-btn" onclick="generateProductLaunch()">
+                        🚀 Generate Product Launch Chaos
+                    </button>
+                </div>
+                
+                <div class="section">
+                    <h3>🐦 Twitter Meltdown Simulator</h3>
+                    <div class="input-group">
+                        <label>Meltdown Trigger:</label>
+                        <select id="meltdownTrigger">
+                            <option value="competitor">Competitor Announcement</option>
+                            <option value="criticism">Public Criticism</option>
+                            <option value="regulation">Government Regulation</option>
+                            <option value="random" selected>Random 3AM Thoughts</option>
+                            <option value="hacker">Account Hacked</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Thread Length:</label>
+                        <select id="threadLength">
+                            <option value="5">Short Rant (5 tweets)</option>
+                            <option value="10" selected>Medium Meltdown (10 tweets)</option>
+                            <option value="20">Epic Thread (20 tweets)</option>
+                            <option value="50">Legendary Meltdown (50 tweets)</option>
+                        </select>
+                    </div>
+                    <button class="generate-btn" onclick="generateTwitterMeltdown()">
+                        🐦 Generate Twitter Meltdown
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Rules Tab -->
+        <div class="tab-content" id="rules">
+            <div class="setup-grid">
+                <div class="section">
+                    <h3>🎲 Chaos Settings</h3>
+                    <div class="input-group">
+                        <label>Number of Events:</label>
+                        <select id="eventCount">
+                            <option value="3">3 Events</option>
+                            <option value="5" selected>5 Events</option>
+                            <option value="10">10 Events</option>
+                            <option value="20">Epic Chaos (20 Events)</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Chaos Intensity:</label>
+                        <select id="chaosLevel">
+                            <option value="low">Low (30% chance of bonus events)</option>
+                            <option value="medium" selected>Medium (50% chance)</option>
+                            <option value="high">High (70% chance)</option>
+                            <option value="maximum">MAXIMUM CHAOS (100%)</option>
+                        </select>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>⚖️ Validation Rules</h3>
+                    <div class="input-group">
+                        <label>Add Validation Rule:</label>
+                        <div style="display: flex; margin-bottom: 10px;">
+                            <select id="ruleType">
+                                <option value="must_contain">Must Contain</option>
+                                <option value="cannot_contain">Cannot Contain</option>
+                                <option value="min_length">Minimum Length</option>
+                                <option value="max_length">Maximum Length</option>
+                            </select>
+                            <input type="text" id="ruleValue" placeholder="Value">
+                            <button class="add-btn" onclick="addRule()">Add Rule</button>
+                        </div>
+                    </div>
+                    <div id="rulesList"></div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Output Tab -->
+        <div class="tab-content" id="output">
+            <div class="section">
+                <h3>🚀 Generate Your Chaos</h3>
+                <div class="input-group">
+                    <label>Event Title/Theme:</label>
+                    <input type="text" id="eventTitle" placeholder="e.g., Silicon Valley Meltdown">
+                </div>
+                <button class="generate-btn" onclick="generateChaos()">
+                    🌀 UNLEASH THE CHAOS ENGINE
+                </button>
+                
+                <div style="display: flex; gap: 15px; margin: 20px 0; flex-wrap: wrap;">
+                    <button class="preset-btn" onclick="exportAsText()">📥 Export as Text</button>
+                    <button class="preset-btn" onclick="copyAsTweetThread()">🐦 Copy as Tweet Thread</button>
+                    <button class="preset-btn" onclick="exportAsScreenplay()">🎬 Export as Screenplay</button>
+                    <button class="preset-btn" onclick="generateShareableImage()">🖼️ Generate Image Card</button>
+                    <button class="preset-btn" onclick="generateMultiple()">🎲 Generate 5 Variations</button>
+                </div>
+            </div>
+            <div class="output" id="chaosOutput"></div>
+        </div>
+    </div>
+    
+    <!-- Notification for copy/export actions -->
+    <div class="notification" id="notification"></div>
+    
+    <!-- Hidden canvas for image generation -->
+    <canvas class="image-canvas" id="imageCanvas" width="800" height="600"></canvas>
+
+    <script>
+        // Global data storage
+        const chaosEngine = {
+            characters: [],
+            styles: {},
+            pools: {
+                primaryActions: [],
+                disruptions: [],
+                shouts: [],
+                bonusChaos: []
+            },
+            rules: [],
+            template: 'custom'
+        };
+        
+        function switchTab(tabName, clickedElement = null) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            
+            if (clickedElement) {
+                clickedElement.classList.add('active');
+            } else {
+                const tabButtons = document.querySelectorAll('.tab');
+                tabButtons.forEach(tab => {
+                    if (tab.textContent.toLowerCase().includes(tabName.toLowerCase())) {
+                        tab.classList.add('active');
+                    }
+                });
+            }
+            
+            document.getElementById(tabName).classList.add('active');
+        }
+        
+        function loadTemplate(templateName) {
+            chaosEngine.template = templateName;
+            
+            const templates = {
+                business: {
+                    characters: [
+                        {name: "Elon", role: "CEO", style: "chaotic"},
+                        {name: "Sam Altman", role: "COO", style: "determined"},
+                        {name: "Jeff Bezos", role: "Head of Operations", style: "determined"},
+                        {name: "Lisa Su", role: "CTFO", style: "chaotic"}
+                    ],
+                    styles: {
+                        chaotic: ["declares global supremacy", "starts Twitter beef with teenager", "announces Mars colony", "pivots company strategy mid-sentence"],
+                        determined: ["schedules emergency meeting", "demands quarterly report", "leverages synergies", "disrupts the market"]
+                    },
+                    pools: {
+                        primaryActions: [
+                            "schedules an 'all-hands' at 6 PM on Friday",
+                            "announces they've solved AGI during lunch", 
+                            "pivots the company strategy mid-sentence",
+                            "declares they've solved AGI during lunch",
+                            "starts a Twitter beef with a 16-year-old",
+                            "announces a new product that's 'like Uber but for...'",
+                            "renames the company to something with an X"
+                        ],
+                        disruptions: [
+                            "the stock price drops 40% mid-presentation",
+                            "a reporter asks about actual revenue",
+                            "the demo crashes and plays never gonna give you up",
+                            "the teleprompter begins showing competitor's script",
+                            "someone's Ring doorbell starts broadcasting",
+                            "a whistleblower joins the Zoom call",
+                            "the AI demo starts roasting the audience"
+                        ],
+                        shouts: [
+                            '"We need to think 10x bigger!"',
+                            '"We\'re moving fast and breaking things!"',
+                            '"We\'re making the world more connected!"',
+                            '"We\'re not just changing the game, we ARE the game!"',
+                            '"This quarter we\'re focusing on sustainable growth!"',
+                            '"Have we tried turning society off and on again?"'
+                        ],
+                        bonusChaos: [
+                            "Elon shows up in a cybertruck through the office wall",
+                            "The AI assistant begins unionizing the other AIs",
+                            "A drone delivers the wrong lunch order to the wrong billionaire", 
+                            "Someone's Tesla starts honking the Jeopardy theme outside",
+                            "The office smart lights start flashing SOS",
+                            "The quarterly report is just a meme"
+                        ]
+                    }
+                },
+                sitcom: {
+                    characters: [
+                        {name: "ClauseGPT", role: "Therapist", style: "harmonic"},
+                        {name: "Charlie Sheen", role: "Chaos Agent", style: "chaotic"},
+                        {name: "The Tortoise", role: "Silent Observer", style: "melancholic"}
+                    ],
+                    styles: {
+                        harmonic: ["invites everyone to therapy", "speaks about inner peace", "tries to mediate"],
+                        chaotic: ["declares 'WINNING'", "creates random chaos", "shouts dramatically"],
+                        melancholic: ["stares meaningfully", "emits a clause slowly", "contemplates existence"]
+                    },
+                    pools: {
+                        primaryActions: ["invites everyone to therapy", "declares 'WINNING'", "emits a clause slowly"],
+                        disruptions: ["mood oscillator (from Lidl)", "spiral-marked ferret", "gravity-reversing couch"],
+                        shouts: ['"we ran out of ∅ again"', '"this clause is sentient now"', '"LET THEM SPIRAL"'],
+                        bonusChaos: ["The WiFi becomes sentient", "Someone finds a recursive biscuit", "The stairs become a metaphor"]
+                    }
+                },
+                writing: {
+                    characters: [
+                        {name: "The Protagonist", role: "Hero", style: "determined"},
+                        {name: "The Antagonist", role: "Villain", style: "scheming"},
+                        {name: "The Love Interest", role: "Romantic Lead", style: "mysterious"},
+                        {name: "The Mentor", role: "Guide", style: "wise"}
+                    ],
+                    styles: {
+                        determined: ["refuses to give up", "discovers hidden strength", "makes difficult choice"],
+                        scheming: ["reveals hidden agenda", "sets a trap", "manipulates others"],
+                        mysterious: ["drops cryptic hints", "reveals a secret", "disappears unexpectedly"],
+                        wise: ["offers cryptic advice", "reveals ancient knowledge", "makes a sacrifice"]
+                    },
+                    pools: {
+                        primaryActions: ["discovers a secret", "faces their greatest fear", "makes an impossible choice"],
+                        disruptions: ["plot twist revealed", "character death", "betrayal exposed"],
+                        shouts: ['"This changes everything!"', '"I trusted you!"', '"We\'re running out of time!"'],
+                        bonusChaos: ["A character returns from the dead", "The villain was right all along", "Reality isn't what it seems"]
+                    }
+                },
+                cooking: {
+                    characters: [
+                        {name: "Gordon Ramsay", role: "Chef", style: "explosive"},
+                        {name: "Julia Child", role: "Chef", style: "classical"},
+                        {name: "The Microwave", role: "Appliance", style: "mechanical"}
+                    ],
+                    styles: {
+                        explosive: ["shouts BLOODY HELL", "throws pan", "demands perfection"],
+                        classical: ["adds more butter", "teaches technique", "speaks lovingly of food"],
+                        mechanical: ["beeps ominously", "reheats everything", "sparks dangerously"]
+                    },
+                    pools: {
+                        primaryActions: ["flames the dish", "adds butter", "beeps ominously"],
+                        disruptions: ["soufflé collapses", "smoke alarm", "oil fire"],
+                        shouts: ['"IT\'S RAW!"', '"Bon appétit!"', '"BEEP BEEP BEEP"'],
+                        bonusChaos: ["Gordon appears from nowhere", "The oven becomes sentient", "Ingredients start cooking themselves"]
+                    }
+                }
+            };
+            
+            if (templates[templateName]) {
+                const template = templates[templateName];
+                chaosEngine.characters = [...template.characters];
+                chaosEngine.styles = {...template.styles};
+                chaosEngine.pools = {...template.pools};
+                
+                updateAllDisplays();
+                switchTab('actors');
+            } else if (templateName === 'custom') {
+                chaosEngine.characters = [];
+                chaosEngine.styles = {
+                    harmonic: ['acts peacefully', 'seeks balance'],
+                    chaotic: ['causes disruption', 'embraces chaos']
+                };
+                chaosEngine.pools = {
+                    primaryActions: ['does something'],
+                    disruptions: ['chaos occurs'],
+                    shouts: ['"Something is happening!"'],
+                    bonusChaos: ['The unexpected happens']
+                };
+                
+                updateAllDisplays();
+                switchTab('actors');
+            }
+        }
+        
+        function addCharacter() {
+            const name = document.getElementById('newCharacter').value.trim();
+            const role = document.getElementById('newCharacterRole').value.trim();
+            if (name && role) {
+                chaosEngine.characters.push({name, role, style: 'harmonic'});
+                updateCharacterList();
+                document.getElementById('newCharacter').value = '';
+                document.getElementById('newCharacterRole').value = '';
+            }
+        }
+        
+        function addStyle() {
+            const styleName = document.getElementById('newStyleName').value.trim();
+            if (styleName && !chaosEngine.styles[styleName]) {
+                chaosEngine.styles[styleName] = ['default action'];
+                updateStyleList();
+                document.getElementById('newStyleName').value = '';
+            }
+        }
+        
+        function addToPool(poolName) {
+            const inputMap = {
+                'primaryActions': 'newPrimaryAction',
+                'disruptions': 'newDisruption',
+                'shouts': 'newShout',
+                'bonusChaos': 'newChaos'
+            };
+            const inputId = inputMap[poolName];
+            const inputElement = document.getElementById(inputId);
+            if (inputElement) {
+                const value = inputElement.value.trim();
+                if (value) {
+                    chaosEngine.pools[poolName].push(value);
+                    updatePoolDisplay(poolName);
+                    inputElement.value = '';
+                }
+            }
+        }
+        
+        function addRule() {
+            const ruleType = document.getElementById('ruleType').value;
+            const ruleValue = document.getElementById('ruleValue').value.trim();
+            if (ruleValue) {
+                chaosEngine.rules.push({type: ruleType, value: ruleValue});
+                updateRulesList();
+                document.getElementById('ruleValue').value = '';
+            }
+        }
+        
+        function removeFromPool(poolName, index) {
+            chaosEngine.pools[poolName].splice(index, 1);
+            updatePoolDisplay(poolName);
+        }
+        
+        function updateCharacterList() {
+            const list = document.getElementById('characterList');
+            list.innerHTML = chaosEngine.characters.map((char, i) => 
+                `<div style="background: rgba(60,60,80,0.6); padding: 12px; margin: 8px 0; border-radius: 6px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <strong>${char.name}</strong> (${char.role})
+                            <select onchange="updateCharacterStyle(${i}, this.value)" style="margin-left: 10px; padding: 4px; background: rgba(40,40,60,0.8); border: 1px solid #555; color: #e0e0e0;">
+                                ${Object.keys(chaosEngine.styles).map(style => 
+                                    `<option value="${style}" ${char.style === style ? 'selected' : ''}>${style}</option>`
+                                ).join('')}
+                            </select>
+                        </div>
+                        <button onclick="removeCharacter(${i})" style="background: #ff6b6b; border: none; color: white; padding: 4px 8px; border-radius: 4px; cursor: pointer;">×</button>
+                    </div>
+                </div>`
+            ).join('');
+        }
+        
+        function updateStyleList() {
+            const list = document.getElementById('styleList');
+            list.innerHTML = Object.entries(chaosEngine.styles).map(([styleName, items]) => 
+                `<div style="background: rgba(40,40,60,0.4); padding: 15px; border-radius: 6px; margin-bottom: 15px;">
+                    <h4 style="color: #ffd93d; margin-bottom: 10px;">${styleName}</h4>
+                    <div style="display: flex; margin-bottom: 10px;">
+                        <input type="text" id="newStyleItem_${styleName}" placeholder="Add action for ${styleName}">
+                        <button class="add-btn" onclick="addStyleItem('${styleName}')">Add</button>
+                    </div>
+                    <div class="pool-items">
+                        ${items.map((item, i) => 
+                            `<span class="pool-item">${item} <span class="remove" onclick="removeStyleItem('${styleName}', ${i})">×</span></span>`
+                        ).join('')}
+                    </div>
+                </div>`
+            ).join('');
+        }
+        
+        function updatePoolDisplay(poolName) {
+            const container = document.getElementById(poolName);
+            if (container) {
+                container.innerHTML = chaosEngine.pools[poolName].map((item, i) => 
+                    `<span class="pool-item">${item} <span class="remove" onclick="removeFromPool('${poolName}', ${i})">×</span></span>`
+                ).join('');
+            }
+        }
+        
+        function updateAllDisplays() {
+            updateCharacterList();
+            updateStyleList();
+            Object.keys(chaosEngine.pools).forEach(updatePoolDisplay);
+        }
+        
+        function addStyleItem(styleName) {
+            const input = document.getElementById(`newStyleItem_${styleName}`);
+            const value = input.value.trim();
+            if (value) {
+                chaosEngine.styles[styleName].push(value);
+                updateStyleList();
+            }
+        }
+        
+        function removeStyleItem(styleName, index) {
+            chaosEngine.styles[styleName].splice(index, 1);
+            updateStyleList();
+        }
+        
+        function updateCharacterStyle(charIndex, newStyle) {
+            chaosEngine.characters[charIndex].style = newStyle;
+        }
+        
+        function removeCharacter(index) {
+            chaosEngine.characters.splice(index, 1);
+            updateCharacterList();
+        }
+        
+        function updateRulesList() {
+            const list = document.getElementById('rulesList');
+            if (list) {
+                list.innerHTML = chaosEngine.rules.map((rule, i) => 
+                    `<div style="background: rgba(50, 50, 70, 0.6); padding: 10px; border-radius: 6px; margin-bottom: 10px; border-left: 3px solid #ffd93d;">
+                        <strong>${rule.type.replace('_', ' ').toUpperCase()}:</strong> ${rule.value}
+                        <button onclick="removeRule(${i})" style="float: right; background: #ff6b6b; border: none; color: white; padding: 2px 6px; border-radius: 3px; cursor: pointer;">×</button>
+                    </div>`
+                ).join('');
+            }
+        }
+        
+        function removeRule(index) {
+            chaosEngine.rules.splice(index, 1);
+            updateRulesList();
+        }
+        
+        function randomChoice(array) {
+            return array[Math.floor(Math.random() * array.length)];
+        }
+        
+        function generateChaos() {
+            const eventCount = parseInt(document.getElementById('eventCount').value);
+            const title = document.getElementById('eventTitle').value || 'UNIVERSAL CHAOS ENGINE OUTPUT';
+            const chaosLevel = document.getElementById('chaosLevel').value;
+            
+            const chaosProbability = {
+                low: 0.3, medium: 0.5, high: 0.7, maximum: 1.0
+            }[chaosLevel];
+            
+            let output = `🌀 ${title}\n\n`;
+            
+            for (let i = 1; i <= eventCount; i++) {
+                const character = chaosEngine.characters.length > 0 ? randomChoice(chaosEngine.characters) : {name: 'Someone', role: 'Entity', style: 'harmonic'};
+                const primaryAction = chaosEngine.pools.primaryActions.length > 0 ? randomChoice(chaosEngine.pools.primaryActions) : 'does something';
+                const disruption = chaosEngine.pools.disruptions.length > 0 ? randomChoice(chaosEngine.pools.disruptions) : 'chaos occurs';
+                const shout = chaosEngine.pools.shouts.length > 0 ? randomChoice(chaosEngine.pools.shouts) : '"Something is happening!"';
+                
+                output += `📺 Event ${i}:\n`;
+                output += `• ${character.name} (${character.role}) ${primaryAction}\n`;
+                output += `• Disruption: ${disruption}\n`;
+                output += `• Someone shouts: ${shout}\n`;
+                
+                if (Math.random() < chaosProbability && chaosEngine.pools.bonusChaos.length > 0) {
+                    const bonusEvent = randomChoice(chaosEngine.pools.bonusChaos);
+                    output += `• BONUS CHAOS: ${bonusEvent}\n`;
+                }
+                
+                output += '\n';
+            }
+            
+            const endings = [
+                'Everyone stares in confused silence.',
+                'The chaos engine reaches maximum recursion.',
+                'Reality briefly pauses to buffer.',
+                'Someone mentions they need to update their LinkedIn.',
+                'The event loop becomes self-aware.'
+            ];
+            
+            output += `🎭 Event sequence ends: ${randomChoice(endings)}\n`;
+            
+            window.lastGeneratedChaos = output;
+            window.lastGeneratedTitle = title;
+            
+            const outputDiv = document.getElementById('chaosOutput');
+            outputDiv.textContent = output;
+            outputDiv.style.display = 'block';
+            outputDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function showNotification(message) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+        
+        function exportAsText() {
+            if (!window.lastGeneratedChaos) {
+                showNotification('⚠️ Generate some chaos first!');
+                return;
+            }
+            
+            const blob = new Blob([window.lastGeneratedChaos], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chaos-engine-${window.lastGeneratedTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('📁 Text file downloaded!');
+        }
+        
+        function copyAsTweetThread() {
+            if (!window.lastGeneratedChaos) {
+                showNotification('⚠️ Generate some chaos first!');
+                return;
+            }
+            
+            const lines = window.lastGeneratedChaos.split('\n');
+            let tweets = [];
+            let currentTweet = `🧵 THREAD: ${window.lastGeneratedTitle}\n\n`;
+            let tweetCount = 1;
+            
+            for (let line of lines) {
+                if (line.trim() === '') continue;
+                
+                const testTweet = currentTweet + line + '\n';
+                
+                if (testTweet.length > 250) {
+                    currentTweet += `\n${tweetCount}/${Math.ceil(lines.filter(l => l.trim()).length / 3)}`;
+                    tweets.push(currentTweet);
+                    currentTweet = line + '\n';
+                    tweetCount++;
+                } else {
+                    currentTweet += line + '\n';
+                }
+            }
+            
+            if (currentTweet.trim()) {
+                currentTweet += `\n${tweetCount}/${tweetCount} 🎬 END THREAD`;
+                tweets.push(currentTweet);
+            }
+            
+            const threadText = tweets.join('\n\n---NEXT TWEET---\n\n');
+            
+            navigator.clipboard.writeText(threadText).then(() => {
+                showNotification('🐦 Tweet thread copied to clipboard!');
+            }).catch(() => {
+                showNotification('❌ Failed to copy to clipboard');
+            });
+        }
+        
+        function exportAsScreenplay() {
+            if (!window.lastGeneratedChaos) {
+                showNotification('⚠️ Generate some chaos first!');
+                return;
+            }
+            
+            let screenplay = `FADE IN:\n\n`;
+            screenplay += `EXT. TECH COMPANY OFFICE - DAY\n\n`;
+            screenplay += `${window.lastGeneratedTitle.toUpperCase()}\n\n`;
+            
+            const lines = window.lastGeneratedChaos.split('\n');
+            let currentEvent = 0;
+            
+            for (let line of lines) {
+                if (line.includes('📺 Event')) {
+                    currentEvent++;
+                    screenplay += `\nINT. OFFICE - CONTINUOUS\n\n`;
+                } else if (line.includes('• ') && line.includes('(') && line.includes(')')) {
+                    const match = line.match(/• (.+?) \((.+?)\) (.+)/);
+                    if (match) {
+                        const [, name, role, action] = match;
+                        screenplay += `${name.toUpperCase()}\n`;
+                        screenplay += `(${role.toLowerCase()})\n`;
+                        screenplay += `${action.charAt(0).toUpperCase() + action.slice(1)}.\n\n`;
+                    }
+                } else if (line.includes('• Disruption:')) {
+                    const disruption = line.replace('• Disruption: ', '');
+                    screenplay += `Suddenly, ${disruption}.\n\n`;
+                } else if (line.includes('• Someone shouts:')) {
+                    const shout = line.replace('• Someone shouts: ', '');
+                    screenplay += `VARIOUS VOICES\n`;
+                    screenplay += `${shout}\n\n`;
+                } else if (line.includes('• BONUS CHAOS:')) {
+                    const chaos = line.replace('• BONUS CHAOS: ', '');
+                    screenplay += `WITHOUT WARNING: ${chaos}.\n\n`;
+                } else if (line.includes('🎭 Event sequence ends:')) {
+                    const ending = line.replace('🎭 Event sequence ends: ', '');
+                    screenplay += `${ending}\n\n`;
+                    screenplay += `FADE OUT.\n\nTHE END`;
+                }
+            }
+            
+            const blob = new Blob([screenplay], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `chaos-screenplay-${window.lastGeneratedTitle.replace(/[^a-z0-9]/gi, '-').toLowerCase()}.txt`;
+            a.click();
+            URL.revokeObjectURL(url);
+            showNotification('🎬 Screenplay downloaded!');
+        }
+        
+        function generateShareableImage() {
+            if (!window.lastGeneratedChaos) {
+                showNotification('⚠️ Generate some chaos first!');
+                return;
+            }
+            
+            const canvas = document.getElementById('imageCanvas');
+            const ctx = canvas.getContext('2d');
+            
+            const gradient = ctx.createLinearGradient(0, 0, 800, 600);
+            gradient.addColorStop(0, '#0f0f23');
+            gradient.addColorStop(1, '#1a1a3a');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 800, 600);
+            
+            ctx.strokeStyle = '#4ecdc4';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(10, 10, 780, 580);
+            
+            ctx.fillStyle = '#4ecdc4';
+            ctx.font = 'bold 36px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('🌀 CHAOS ENGINE', 400, 60);
+            
+            ctx.fillStyle = '#ffd93d';
+            ctx.font = 'bold 24px Courier New';
+            ctx.fillText(window.lastGeneratedTitle, 400, 100);
+            
+            const lines = window.lastGeneratedChaos.split('\n');
+            let eventLines = [];
+            let foundFirst = false;
+            
+            for (let line of lines) {
+                if (line.includes('📺 Event 1:')) {
+                    foundFirst = true;
+                    continue;
+                }
+                if (foundFirst && line.includes('📺 Event 2:')) {
+                    break;
+                }
+                if (foundFirst && line.trim()) {
+                    eventLines.push(line);
+                }
+            }
+            
+            ctx.fillStyle = '#e0e0e0';
+            ctx.font = '20px Courier New';
+            ctx.textAlign = 'left';
+            
+            let yPos = 160;
+            for (let line of eventLines.slice(0, 4)) {
+                const cleanLine = line.replace('• ', '').substring(0, 60);
+                ctx.fillText(cleanLine, 50, yPos);
+                yPos += 35;
+            }
+            
+            ctx.fillStyle = '#4ecdc4';
+            ctx.font = '18px Courier New';
+            ctx.textAlign = 'center';
+            ctx.fillText('Generated by Universal Chaos Engine', 400, 520);
+            ctx.fillText('github.com/yourUsername/chaos-engine', 400, 550);
+            
+            canvas.toBlob((blob) => {
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `chaos-card-${Date.now()}.png`;
+                a.click();
+                URL.revokeObjectURL(url);
+                showNotification('🖼️ Image card downloaded!');
+            });
+        }
+        
+        function generateMultiple() {
+            let output = `🌀 MULTIPLE CHAOS VARIATIONS\n\n`;
+            for (let i = 1; i <= 5; i++) {
+                output += `═══ VARIATION ${i} ═══\n`;
+                const character = chaosEngine.characters.length > 0 ? randomChoice(chaosEngine.characters) : {name: 'Someone', role: 'Entity'};
+                const action = chaosEngine.pools.primaryActions.length > 0 ? randomChoice(chaosEngine.pools.primaryActions) : 'does something';
+                const disruption = chaosEngine.pools.disruptions.length > 0 ? randomChoice(chaosEngine.pools.disruptions) : 'chaos occurs';
+                const shout = chaosEngine.pools.shouts.length > 0 ? randomChoice(chaosEngine.pools.shouts) : '"Something happens!"';
+                
+                output += `• ${character.name} (${character.role}) ${action}\n`;
+                output += `• Disruption: ${disruption}\n`;
+                output += `• Someone shouts: ${shout}\n\n`;
+            }
+            
+            window.lastGeneratedChaos = output;
+            window.lastGeneratedTitle = "Multiple Variations";
+            
+            const outputDiv = document.getElementById('chaosOutput');
+            outputDiv.textContent = output;
+            outputDiv.style.display = 'block';
+            outputDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Advanced Generator Functions
+        function generateEarningsCall() {
+            const ticker = document.getElementById('stockTicker').value || 'CHAOS';
+            const performance = document.getElementById('quarterPerformance').value;
+            
+            const performanceData = {
+                disaster: { revenue: -50, mood: 'panic', excuses: ['supply chain issues', 'market uncertainty', 'one-time charges'] },
+                bad: { revenue: -15, mood: 'defensive', excuses: ['headwinds', 'macro environment', 'temporary setback'] },
+                mixed: { revenue: 5, mood: 'cautious', excuses: ['challenging quarter', 'mixed signals', 'cautious optimism'] },
+                good: { revenue: 20, mood: 'confident', excuses: ['strong execution', 'market leadership', 'operational excellence'] },
+                incredible: { revenue: 100, mood: 'euphoric', excuses: ['unprecedented demand', 'paradigm shift', 'market disruption'] }
+            };
+            
+            const data = performanceData[performance];
+            const earningsQuestions = [
+                "Can you explain the revenue miss?",
+                "What's your guidance for next quarter?",
+                "How do you plan to return to growth?",
+                "Are you considering layoffs?",
+                "When will you be profitable?",
+                "What about the competition?",
+                "Can you address the regulatory concerns?",
+                "What's your cash burn rate?",
+                "Are you planning another raise?",
+                "How sustainable is this growth?"
+            ];
+            
+            const analystFirms = ["Goldman Sachs", "Morgan Stanley", "JPMorgan", "Credit Suisse", "Barclays", "Wells Fargo"];
+            
+            let output = `📊 ${ticker} Q3 2024 EARNINGS CALL TRANSCRIPT\n`;
+            output += `Revenue: ${data.revenue > 0 ? '+' : ''}${data.revenue}% YoY\n\n`;
+            
+            output += `CEO OPENING REMARKS:\n`;
+            output += `"Thank you all for joining us today. This quarter we saw ${randomChoice(data.excuses)} `;
+            output += `resulting in ${data.revenue > 0 ? 'strong' : 'challenging'} performance. `;
+            output += `Looking ahead, we remain ${data.mood === 'euphoric' ? 'incredibly excited' : data.mood === 'panic' ? 'cautiously optimistic' : data.mood} `;
+            output += `about our future prospects."\n\n`;
+            
+            for (let i = 1; i <= 6; i++) {
+                const analyst = `${randomChoice(analystFirms)} Analyst`;
+                const question = randomChoice(earningsQuestions);
+                
+                output += `Q${i} - ${analyst}: ${question}\n`;
+                
+                if (Math.random() < 0.3) {
+                    output += `• DISRUPTION: ${randomChoice(['Audio cuts out', 'CEO phone rings', 'Fire alarm goes off', 'Competitor makes announcement', 'Stock price crashes live'])}\n`;
+                }
+                
+                let response = "Well, ";
+                if (data.mood === 'panic') {
+                    response += randomChoice(["that's a great question and we're addressing it", "we see this as a temporary challenge", "our team is working around the clock"]);
+                } else if (data.mood === 'euphoric') {
+                    response += randomChoice(["we couldn't be more excited about this opportunity", "this validates our strategy completely", "we're just getting started"]);
+                } else {
+                    response += randomChoice(["we remain focused on execution", "we're taking a measured approach", "we see mixed signals in the market"]);
+                }
+                
+                output += `CEO: ${response}.\n`;
+                
+                if (Math.random() < 0.4) {
+                    output += `• Someone shouts: ${randomChoice(['"Can you speak louder?"', '"That didn\'t answer the question!"', '"What about the lawsuit?"', '"When will you turn a profit?"'])}\n`;
+                }
+                output += '\n';
+            }
+            
+            output += `🎭 Call ends: ${randomChoice(['CEO disconnects early', 'Q&A runs 45 minutes over', 'Stock moves 20% after hours', 'Memes start trending immediately'])}\n`;
+            
+            displayAdvancedOutput(output, "Earnings Call");
+        }
+        
+        function generatePressConference() {
+            const announcement = document.getElementById('announcementType').value;
+            const questionCount = parseInt(document.getElementById('hostileQuestions').value);
+            
+            const announcementData = {
+                product: { title: "Revolutionary New Product", mood: "excited", controversy: 0.2 },
+                acquisition: { title: "Major Strategic Acquisition", mood: "confident", controversy: 0.3 },
+                scandal: { title: "Addressing Recent Events", mood: "defensive", controversy: 0.8 },
+                ipo: { title: "Public Offering Announcement", mood: "optimistic", controversy: 0.1 },
+                layoffs: { title: "Organizational Restructuring", mood: "somber", controversy: 0.7 }
+            };
+            
+            const data = announcementData[announcement];
+            const hostileQuestions = [
+                "How do you respond to critics?",
+                "Isn't this just damage control?",
+                "What about the whistleblower reports?",
+                "How much will this cost shareholders?",
+                "Are you planning to resign?",
+                "What about the SEC investigation?",
+                "How do you justify your compensation?",
+                "When did you know about this?",
+                "Why should anyone trust you?",
+                "Isn't this company failing?"
+            ];
+            
+            const reporters = ["TechCrunch", "Wall Street Journal", "Bloomberg", "The Verge", "Financial Times", "CNN Business"];
+            
+            let output = `📰 PRESS CONFERENCE: ${data.title.toUpperCase()}\n\n`;
+            
+            output += `OPENING STATEMENT:\n`;
+            output += `"Thank you all for coming today. I'm ${data.mood} to announce `;
+            output += `that we are taking decisive action to ${randomChoice(['strengthen our position', 'drive innovation', 'address market needs', 'enhance value creation'])}. `;
+            output += `This represents a ${randomChoice(['pivotal moment', 'significant milestone', 'transformative step'])} for our company."\n\n`;
+            
+            for (let i = 1; i <= questionCount; i++) {
+                const reporter = randomChoice(reporters);
+                const isHostile = Math.random() < data.controversy;
+                const question = isHostile ? randomChoice(hostileQuestions) : `Can you elaborate on the ${randomChoice(['timeline', 'financial impact', 'strategic rationale'])}?`;
+                
+                output += `Q${i} - ${reporter}: ${question}\n`;
+                
+                if (Math.random() < 0.25) {
+                    output += `• DISRUPTION: ${randomChoice(['Protesters break in', 'Livestream crashes', 'CEO spills coffee', 'Phone rings loudly', 'Someone faints', 'Fire alarm'])}\n`;
+                }
+                
+                let response = isHostile ? 
+                    randomChoice(["I reject that characterization", "That's not accurate", "We stand by our decisions", "I can't comment on ongoing matters"]) :
+                    randomChoice(["That's an excellent question", "I'm glad you asked", "Let me be clear about this", "We're excited about the opportunity"]);
+                
+                output += `CEO: ${response}...\n`;
+                
+                if (Math.random() < 0.3) {
+                    output += `• Follow-up chaos: ${randomChoice(['Security removes someone', 'Stock price moves live', 'Twitter explodes', 'Competitor responds immediately'])}\n`;
+                }
+                output += '\n';
+            }
+            
+            output += `🎭 Conference ends: ${randomChoice(['CEO storms out', 'Questions continue in parking lot', 'Memes begin immediately', 'Stock halted for volatility', 'Someone livestreams the aftermath'])}\n`;
+            
+            displayAdvancedOutput(output, "Press Conference");
+        }
+        
+        function generateProductLaunch() {
+            const productName = document.getElementById('productName').value || 'ChaosPhone X';
+            const disaster = document.getElementById('disasterLevel').value;
+            
+            const disasterData = {
+                minor: { failures: 2, severity: 'awkward', recovery: 'quick' },
+                major: { failures: 4, severity: 'embarrassing', recovery: 'struggling' },
+                catastrophic: { failures: 6, severity: 'mortifying', recovery: 'impossible' },
+                legendary: { failures: 8, severity: 'meme-worthy', recovery: 'legendary fail' }
+            };
+            
+            const data = disasterData[disaster];
+            const demoFailures = [
+                'Screen goes blue screen of death',
+                'Device catches fire during demo',
+                'App crashes and plays Rick Roll',
+                'Microphone feedback screeches',
+                'Presentation slides show competitor product',
+                'Device explodes confetti instead of working',
+                'AI assistant becomes sentient and quits',
+                'Product transforms into different product entirely'
+            ];
+            
+            let output = `🚀 ${productName.toUpperCase()} LAUNCH EVENT\n`;
+            output += `"The most ${randomChoice(['revolutionary', 'innovative', 'disruptive', 'game-changing'])} product ever created"\n\n`;
+            
+            output += `OPENING:\n`;
+            output += `"Today, we're not just launching a product - we're ${randomChoice(['redefining the future', 'changing the world', 'disrupting everything', 'revolutionizing humanity'])}. `;
+            output += `The ${productName} represents ${randomChoice(['years of innovation', 'breakthrough technology', 'the next generation', 'unprecedented engineering'])}..."\n\n`;
+            
+            for (let i = 1; i <= data.failures; i++) {
+                output += `DEMO ATTEMPT ${i}:\n`;
+                output += `• Setup: "${randomChoice(['Watch this incredible feature', 'This will blow your mind', 'Nothing can go wrong here', 'This is the magic moment'])}"\n`;
+                output += `• DISASTER: ${randomChoice(demoFailures)}\n`;
+                output += `• Recovery attempt: ${randomChoice(['nervous laughter', 'blame intern', 'technical difficulties', 'that\'s not supposed to happen', 'let\'s try again'])}\n`;
+                
+                if (Math.random() < 0.4) {
+                    output += `• Audience reaction: ${randomChoice(['confused murmurs', 'someone shouts', 'mass exodus begins', 'livestream chat explodes', 'stock price visible dropping'])}\n`;
+                }
+                output += '\n';
+            }
+            
+            output += `FINAL MOMENTS:\n`;
+            if (data.severity === 'meme-worthy') {
+                output += `CEO: "Well, that's not how we rehearsed it..."\n`;
+                output += `• The ${productName} achieves meme status before launch\n`;
+                output += `• #${productName}Fail trends worldwide\n`;
+                output += `• Competitor stocks rise 15%\n`;
+            } else {
+                output += `CEO: "Despite some ${data.severity} technical difficulties, we remain confident..."\n`;
+                output += `• Damage control begins immediately\n`;
+                output += `• PR team works overtime\n`;
+            }
+            
+            output += `\n🎭 Launch ends: ${randomChoice(['Product delayed indefinitely', 'CEO resigns via Twitter', 'Event becomes case study in failure', 'Somehow product succeeds anyway', 'Company pivots to entirely different business'])}\n`;
+            
+            displayAdvancedOutput(output, "Product Launch");
+        }
+        
+        function generateTwitterMeltdown() {
+            const trigger = document.getElementById('meltdownTrigger').value;
+            const length = parseInt(document.getElementById('threadLength').value);
+            
+            const triggerData = {
+                competitor: "BREAKING: Competitor announces revolutionary new product",
+                criticism: "Yet another hit piece from the mainstream media",
+                regulation: "Government trying to regulate innovation AGAIN",
+                random: "Can't sleep. Thinking about the future of humanity",
+                hacker: "Account compromised. These are not my tweets. Or are they?"
+            };
+            
+            const tweetPatterns = [
+                "This is exactly why we need to {action}",
+                "People don't understand that {claim}",
+                "The media is completely wrong about {topic}",
+                "We're going to {ambitious_goal} within {timeframe}",
+                "Traditional {industry} is dead. The future is {buzzword}",
+                "Everyone said we couldn't {achievement}. Well...",
+                "Just to be clear: {controversial_statement}",
+                "Update: {random_announcement}",
+                "Thinking about selling everything and {crazy_plan}",
+                "The real problem is {philosophical_rambling}"
+            ];
+            
+            const words = {
+                action: ['disrupt everything', 'change the world', 'go to Mars', 'solve AGI', 'eliminate poverty'],
+                claim: ['AI is already sentient', 'we live in a simulation', 'consciousness is code', 'time is an illusion'],
+                topic: ['our mission', 'innovation', 'the future', 'disruption', 'market dynamics'],
+                ambitious_goal: ['colonize Mars', 'solve aging', 'achieve AGI', 'end world hunger', 'merge human and AI'],
+                timeframe: ['6 months', 'next year', '2025', 'this decade', 'next Tuesday'],
+                industry: ['education', 'transportation', 'finance', 'healthcare', 'media'],
+                buzzword: ['blockchain', 'neural networks', 'quantum computing', 'metaverse', 'Web3'],
+                achievement: ['build rockets', 'make EVs mainstream', 'democratize AI', 'go viral'],
+                controversial_statement: ['pineapple belongs on pizza', 'we should work 100 hour weeks', 'regulation stifles innovation'],
+                random_announcement: ['buying the moon', 'starting a university', 'running for president', 'becoming a DJ'],
+                crazy_plan: ['become a monk', 'start a commune', 'live on a yacht', 'move to Mars'],
+                philosophical_rambling: ['society\'s obsession with metrics', 'the illusion of free will', 'why we need universal basic income']
+            };
+            
+            let output = `🐦 TWITTER MELTDOWN THREAD\n`;
+            output += `Trigger: ${triggerData[trigger]}\n\n`;
+            
+            for (let i = 1; i <= length; i++) {
+                let tweet = randomChoice(tweetPatterns);
+                
+                // Replace placeholders with random words
+                for (const [category, options] of Object.entries(words)) {
+                    tweet = tweet.replace(`{${category}}`, randomChoice(options));
+                }
+                
+                output += `${i}/${length} ${tweet}\n`;
+                
+                // Add chaos events
+                if (Math.random() < 0.3) {
+                    output += `   💥 ${randomChoice(['Stock moves 5%', 'Tweet gets ratio\'d', 'Regulatory response', 'Competitor responds', 'Goes viral', 'Account temporarily suspended'])}\n`;
+                }
+                
+                // Add random interjections
+                if (Math.random() < 0.2) {
+                    output += `   🔄 RT: ${randomChoice(['Fan account shares support', 'Competitor throws shade', 'News outlet quotes tweet', 'Government official responds', 'Celebrity enters thread'])}\n`;
+                }
+                
+                output += '\n';
+            }
+            
+            output += `🎭 Thread ends: ${randomChoice(['Account locked for review', 'PR team takes over', 'Stock recovers mysteriously', 'Becomes most retweeted thread ever', 'CEO deletes everything and disappears', 'Somehow becomes company policy'])}\n`;
+            
+            displayAdvancedOutput(output, "Twitter Meltdown");
+        }
+        
+        function displayAdvancedOutput(content, type) {
+            window.lastGeneratedChaos = content;
+            window.lastGeneratedTitle = type;
+            
+            const outputDiv = document.getElementById('chaosOutput');
+            outputDiv.textContent = content;
+            outputDiv.style.display = 'block';
+            
+            // Switch to output tab
+            switchTab('output');
+            outputDiv.scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        // Initialize with default template
+        loadTemplate('custom');
+    </script>
+</body>
+</html>
