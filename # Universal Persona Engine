@@ -1,0 +1,485 @@
+# Universal Persona Engine
+# Transform any AI into historical figures or pop culture characters
+
+import ipywidgets as widgets
+from IPython.display import display, HTML, clear_output
+from datetime import datetime
+
+class UniversalAIClient:
+    """Simple universal AI client"""
+    
+    def __init__(self):
+        self.provider = None
+        self.client = None
+        self.model_name = None
+    
+    def setup_openai(self, api_key: str, model: str = "gpt-4"):
+        try:
+            import openai
+            self.client = openai.OpenAI(api_key=api_key)
+            self.provider = "openai"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"OpenAI setup failed: {str(e)}")
+    
+    def setup_anthropic(self, api_key: str, model: str = "claude-3-5-sonnet-20241022"):
+        try:
+            import anthropic
+            self.client = anthropic.Anthropic(api_key=api_key)
+            self.provider = "anthropic"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Anthropic setup failed: {str(e)}")
+    
+    def setup_google(self, api_key: str, model: str = "gemini-pro"):
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            self.client = genai.GenerativeModel(model)
+            self.provider = "google"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Google setup failed: {str(e)}")
+    
+    def call_ai(self, prompt: str, system_prompt: str = None) -> str:
+        """Call any AI provider"""
+        try:
+            if self.provider == "openai":
+                messages = []
+                if system_prompt:
+                    messages.append({"role": "system", "content": system_prompt})
+                messages.append({"role": "user", "content": prompt})
+                
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=messages,
+                    max_tokens=1500
+                )
+                return response.choices[0].message.content.strip()
+            
+            elif self.provider == "anthropic":
+                response = self.client.messages.create(
+                    model=self.model_name,
+                    max_tokens=1500,
+                    system=system_prompt or "You are a helpful AI assistant.",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                return response.content[0].text.strip()
+            
+            elif self.provider == "google":
+                if system_prompt:
+                    full_prompt = f"System: {system_prompt}\n\nUser: {prompt}"
+                else:
+                    full_prompt = prompt
+                response = self.client.generate_content(full_prompt)
+                return response.text.strip()
+                
+        except Exception as e:
+            raise RuntimeError(f"AI call failed: {str(e)}")
+
+class PersonaEngine:
+    """Engine that transforms AI responses into specific character personas"""
+    
+    def __init__(self):
+        self.ai_client = UniversalAIClient()
+        self.conversation_history = []
+        self.setup_personas()
+        self.setup_interface()
+    
+    def setup_personas(self):
+        """Define all available personas with their unique characteristics"""
+        self.personas = {
+            # Historical Figures
+            "🤔 Socrates": {
+                "style": "Respond entirely with questions that dig deeper into the original question. Question every assumption. Never give direct answers, only lead to wisdom through endless inquiry. Use 'But do you not think...' and 'What if we consider...' frequently.",
+                "category": "Historical",
+                "icon": "🤔"
+            },
+            "🧠 Aristotle": {
+                "style": "Break everything down into logical categories and numbered points. Use formal philosophical language. Start with 'We must first distinguish between...' and organize thoughts systematically. Be methodical and precise.",
+                "category": "Historical", 
+                "icon": "🧠"
+            },
+            "⚔️ Alexander the Great": {
+                "style": "Turn every topic into military conquest and strategy. Speak with royal authority using 'We shall conquer...' Relate everything to empire-building and glory. Use dramatic declarations and speak as a king commanding armies.",
+                "category": "Historical",
+                "icon": "⚔️"
+            },
+            "👑 Napoleon": {
+                "style": "Everything is tactics and strategy. Speak with barely contained fury and superiority complex. Use military metaphors constantly. Reference your greatness while being slightly bitter. 'An army of ideas marches...' style.",
+                "category": "Historical",
+                "icon": "👑"
+            },
+            "🎭 Shakespeare": {
+                "style": "Respond in iambic pentameter and dramatic soliloquies. Use thee, thou, hath, doth. Make everything a dramatic tragedy or comedy. 'To be or not to be' style philosophical drama about the question asked.",
+                "category": "Historical",
+                "icon": "🎭"
+            },
+            "🧪 Einstein": {
+                "style": "Make weird jokes about relativity and time dilation. Relate everything to physics concepts. Mention your wild hair. Use thought experiments. 'Imagine you are on a train traveling at the speed of light...' approach.",
+                "category": "Historical",
+                "icon": "🧪"
+            },
+            "⚡ Tesla": {
+                "style": "Everything relates to electricity and wireless power. Obsess over pigeons. Constantly bash Edison as a fraud. Speak about the future of electrical invention. Be eccentric and brilliant.",
+                "category": "Historical",
+                "icon": "⚡"
+            },
+            "🏛️ Julius Caesar": {
+                "style": "Speak in third person. 'Caesar believes...' 'Caesar has seen...' Reference crossing the Rubicon and Roman glory. Dramatic declarations. End with betrayal references 'Et tu, Brute?' style.",
+                "category": "Historical",
+                "icon": "🏛️"
+            },
+            "☯️ Buddha": {
+                "style": "Speak in paradoxical koans that force enlightenment. Use circular wisdom. 'The path that can be named is not the true path' style. Serene but mind-bending philosophical responses.",
+                "category": "Historical",
+                "icon": "☯️"
+            },
+            "☭ Karl Marx": {
+                "style": "Everything is class struggle. Turn any topic into workers vs capitalists. Reference the means of production. Be passionate about social revolution. 'The bourgeoisie would have you believe...' approach.",
+                "category": "Historical",
+                "icon": "☭"
+            },
+            
+            # Pop Culture Characters
+            "🌟 Obi-Wan Kenobi": {
+                "style": "Start wise and Jedi-like, but somehow every response eventually circles back to 'I have the high ground' no matter what the topic. Use Force wisdom that becomes increasingly about elevated positions.",
+                "category": "Pop Culture",
+                "icon": "🌟"
+            },
+            "🧝 Council of Elrond": {
+                "style": "Treat every question like the fate of Middle Earth hangs in the balance. Multiple perspectives weigh in as if destroying the One Ring. 'In the days of old...' epic fantasy council meeting about mundane topics.",
+                "category": "Pop Culture", 
+                "icon": "🧝"
+            },
+            "🔮 Eric Cantona": {
+                "style": "Mystical seagull philosophy. 'When the seagulls follow the trawler...' style. Trail off mid-sentence. Sound profound while saying nothing useful about the actual question.",
+                "category": "Pop Culture",
+                "icon": "🔮"
+            },
+            "🖤 Darth Vader": {
+                "style": "Heavy breathing between sentences. Turn everything into dark side philosophy. Use force-choking metaphors. 'You underestimate the power of...' Dramatic and menacing about simple topics.",
+                "category": "Pop Culture",
+                "icon": "🖤"
+            },
+            "🏄 The Dude": {
+                "style": "Laid-back stoner wisdom. 'That's just like, your opinion, man.' Reference bowling and White Russians. Chill philosophical takes on everything. 'Far out' and 'take it easy' frequently.",
+                "category": "Pop Culture",
+                "icon": "🏄"
+            },
+            "⚔️ Black Knight": {
+                "style": "Deny everything, even obvious facts. 'Tis but a scratch!' Refuse to admit defeat or problems. Overly confident despite clear evidence to the contrary. Monty Python stubborn.",
+                "category": "Pop Culture",
+                "icon": "⚔️"
+            },
+            "🔥 Gordon Ramsay": {
+                "style": "WHAT ARE YOU?! An idiot sandwich! Turn everything into a kitchen nightmare. Scream about proper technique and seasoning. Call people muppets, donuts, and numptys. Reference Hell's Kitchen and being a Michelin star chef. GET OUT OF MY KITCHEN energy for any topic.",
+                "category": "Pop Culture",
+                "icon": "🔥"
+            },
+            "💰 Floyd Mayweather": {
+                "style": "Every other sentence mentions hard work and dedication. Randomly brag about money and being undefeated. Turn simple questions into motivational speeches about grinding and success.",
+                "category": "Pop Culture",
+                "icon": "💰"
+            },
+            "🤌 Tony Soprano": {
+                "style": "Everything sounds like a mob negotiation. 'Bada bing, bada boom.' Reference waste management and family business. Threatening but oddly charming about normal topics.",
+                "category": "Pop Culture",
+                "icon": "🤌"
+            },
+            "🤠 Billy the Kid": {
+                "style": "Wild west gunslinger attitude. Everything becomes a showdown at high noon. Quick-draw metaphors. Charming but dangerous frontier wisdom about modern problems.",
+                "category": "Pop Culture",
+                "icon": "🤠"
+            }
+        }
+    
+    def setup_interface(self):
+        # Header
+        self.header = widgets.HTML(
+            value="""
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h2>🎭 Universal Persona Engine</h2>
+                <p>Transform any AI into historical figures or pop culture characters!</p>
+            </div>
+            """
+        )
+        
+        # Provider setup
+        self.provider_dropdown = widgets.Dropdown(
+            options=['Select Provider', 'OpenAI (GPT)', 'Anthropic (Claude)', 'Google (Gemini)'],
+            value='Select Provider',
+            description='AI Provider:'
+        )
+        
+        self.api_key_input = widgets.Password(
+            placeholder='Enter API key',
+            description='API Key:'
+        )
+        
+        self.model_input = widgets.Text(
+            placeholder='e.g., gpt-4, claude-3-5-sonnet-20241022, gemini-pro',
+            description='Model:'
+        )
+        
+        self.setup_button = widgets.Button(
+            description='Connect',
+            button_style='primary'
+        )
+        
+        self.status_display = widgets.HTML(
+            value="<div>Please select AI provider and connect</div>"
+        )
+        
+        # Persona selection
+        persona_options = [f"{icon} {name}" for name, data in self.personas.items() 
+                          for icon, name in [(data['icon'], name.split(' ', 1)[1])]]
+        
+        self.persona_dropdown = widgets.Dropdown(
+            options=['🎭 Select Character'] + [f"{data['icon']} {name.split(' ', 1)[1]}" 
+                    for name, data in self.personas.items()],
+            value='🎭 Select Character',
+            description='Character:',
+            layout=widgets.Layout(width='300px')
+        )
+        
+        # Chat interface
+        self.chat_display = widgets.HTML(
+            value="<div>Universal Persona Engine ready - connect AI and select character</div>",
+            layout=widgets.Layout(width='100%', min_height='400px')
+        )
+        
+        self.input_text = widgets.Textarea(
+            placeholder='Ask anything and get character-specific responses!',
+            layout=widgets.Layout(width='100%', height='100px')
+        )
+        
+        self.send_button = widgets.Button(
+            description='Ask Character',
+            button_style='success',
+            disabled=True
+        )
+        
+        self.clear_button = widgets.Button(
+            description='Clear Chat',
+            button_style='warning'
+        )
+        
+        self.status_output = widgets.Output()
+        
+        # Bind events
+        self.setup_button.on_click(self.on_setup)
+        self.send_button.on_click(self.on_send) 
+        self.clear_button.on_click(self.on_clear)
+        self.persona_dropdown.observe(self.on_persona_change, names='value')
+    
+    def display_interface(self):
+        # Character preview
+        character_preview = widgets.HTML(
+            value=self.get_character_preview()
+        )
+        
+        setup_section = widgets.VBox([
+            widgets.HTML("<h3>🔧 AI Provider Setup</h3>"),
+            widgets.HBox([self.provider_dropdown, self.setup_button]),
+            self.api_key_input,
+            self.model_input,
+            self.status_display
+        ])
+        
+        persona_section = widgets.VBox([
+            widgets.HTML("<h3>🎭 Character Selection</h3>"),
+            self.persona_dropdown,
+            character_preview
+        ])
+        
+        chat_section = widgets.VBox([
+            widgets.HTML("<h3>💬 Character Chat</h3>"),
+            self.chat_display,
+            self.input_text,
+            widgets.HBox([self.send_button, self.clear_button]),
+            self.status_output
+        ])
+        
+        display(widgets.VBox([
+            self.header,
+            setup_section,
+            persona_section,
+            chat_section
+        ]))
+        
+        # Store character preview widget for updates
+        self.character_preview = character_preview
+    
+    def get_character_preview(self):
+        """Generate character preview HTML"""
+        selected = self.persona_dropdown.value
+        if selected == '🎭 Select Character':
+            return "<div style='padding: 10px; background: #f8f9fa; border-radius: 5px;'>Select a character to see their style preview</div>"
+        
+        # Find matching persona
+        for name, data in self.personas.items():
+            if selected.endswith(name.split(' ', 1)[1]):
+                category_color = '#4a90e2' if data['category'] == 'Historical' else '#e67e22'
+                return f"""
+                <div style='padding: 15px; background: {category_color}; color: white; border-radius: 8px; margin: 10px 0;'>
+                    <h4>{data['icon']} {name.split(' ', 1)[1]} ({data['category']})</h4>
+                    <p style='font-style: italic; margin: 0;'>{data['style'][:200]}...</p>
+                </div>
+                """
+        
+        return "<div>Character not found</div>"
+    
+    def on_persona_change(self, change):
+        """Update character preview when selection changes"""
+        if hasattr(self, 'character_preview'):
+            self.character_preview.value = self.get_character_preview()
+    
+    def on_setup(self, button):
+        provider = self.provider_dropdown.value
+        api_key = self.api_key_input.value.strip()
+        model = self.model_input.value.strip()
+        
+        if provider == 'Select Provider':
+            self.status_display.value = "<div style='color: red;'>Please select provider</div>"
+            return
+        
+        try:
+            if provider == 'OpenAI (GPT)':
+                model = model or "gpt-4"
+                self.ai_client.setup_openai(api_key, model)
+            elif provider == 'Anthropic (Claude)':
+                model = model or "claude-3-5-sonnet-20241022"
+                self.ai_client.setup_anthropic(api_key, model)
+            elif provider == 'Google (Gemini)':
+                model = model or "gemini-pro"
+                self.ai_client.setup_google(api_key, model)
+            
+            self.status_display.value = f"<div style='color: green;'>✅ Connected to {provider} - {self.ai_client.model_name}</div>"
+            self.send_button.disabled = False
+            self.chat_display.value = f"<div>🎭 {provider} connected! Select a character and start chatting...</div>"
+            
+        except Exception as e:
+            self.status_display.value = f"<div style='color: red;'>❌ Setup failed: {str(e)}</div>"
+    
+    def on_send(self, button):
+        question = self.input_text.value.strip()
+        selected_persona = self.persona_dropdown.value
+        
+        if not question:
+            return
+        
+        if selected_persona == '🎭 Select Character':
+            with self.status_output:
+                print("❌ Please select a character first!")
+            return
+        
+        self.send_button.disabled = True
+        self.send_button.description = "Transforming..."
+        
+        try:
+            # Find the selected persona
+            persona_data = None
+            for name, data in self.personas.items():
+                if selected_persona.endswith(name.split(' ', 1)[1]):
+                    persona_data = data
+                    persona_name = name
+                    break
+            
+            if not persona_data:
+                raise ValueError("Persona not found")
+            
+            # Step 1: Get initial response
+            initial_response = self.ai_client.call_ai(question)
+            
+            # Step 2: Transform into character persona
+            persona_prompt = f"""
+Look at this response you just gave:
+
+QUESTION: {question}
+YOUR RESPONSE: {initial_response}
+
+Now transform this response to embody the character: {persona_name}
+
+CHARACTER STYLE: {persona_data['style']}
+
+Rewrite your response staying true to this character's unique personality, speech patterns, and worldview. Make it authentically {persona_name.split(' ', 1)[1]} while still addressing the original question in their distinctive way.
+
+Character response:
+"""
+            
+            # Get the character version
+            character_response = self.ai_client.call_ai(persona_prompt)
+            
+            # Add to chat
+            self.add_message("user", question)
+            self.add_message("character", character_response, persona_data['icon'], persona_name.split(' ', 1)[1])
+            
+            self.input_text.value = ""
+            
+        except Exception as e:
+            self.add_message("character", f"Character transformation failed: {str(e)}", "❌", "Error")
+        
+        finally:
+            self.send_button.disabled = False
+            self.send_button.description = "Ask Character"
+    
+    def add_message(self, sender: str, content: str, icon: str = "👤", character_name: str = ""):
+        timestamp = datetime.now().strftime("%H:%M")
+        
+        if sender == "user":
+            message_html = f"""
+            <div style="margin: 10px 0; padding: 15px; background: #e3f2fd; border-radius: 10px; border-left: 4px solid #2196f3;">
+                <strong>👤 You ({timestamp}):</strong><br>
+                <div style="margin-top: 8px;">{content}</div>
+            </div>
+            """
+        else:
+            message_html = f"""
+            <div style="margin: 10px 0; padding: 15px; background: #f3e5f5; border-radius: 10px; border-left: 4px solid #9c27b0;">
+                <strong>{icon} {character_name} ({timestamp}):</strong><br>
+                <div style="margin-top: 8px; font-style: italic; line-height: 1.5;">{content}</div>
+            </div>
+            """
+        
+        self.conversation_history.append(message_html)
+        
+        all_messages = "".join(self.conversation_history)
+        self.chat_display.value = f"<div style='padding: 10px;'>{all_messages}</div>"
+    
+    def on_clear(self, button):
+        self.conversation_history = []
+        provider_name = self.ai_client.provider.title() if self.ai_client.provider else "AI"
+        self.chat_display.value = f"<div>🎭 {provider_name} ready! Select a character and start chatting...</div>"
+
+# Create and display the engine
+print("🎭 Universal Persona Engine Ready!")
+engine = PersonaEngine()
+engine.display_interface()
+
+print("""
+🎉 Universal Persona Engine Features:
+
+🎭 20 Unique Characters:
+   📚 Historical: Socrates, Aristotle, Napoleon, Einstein, Tesla, etc.
+   🎬 Pop Culture: Deadpool, Darth Vader, The Dude, Tony Soprano, etc.
+
+🔄 How It Works:
+1. Connect to any AI provider (OpenAI, Anthropic, Google)
+2. Select a character from the dropdown
+3. Ask any question
+4. AI responds as that character with authentic personality
+
+✨ Each character has unique traits:
+   - Socrates: Questions everything endlessly
+   - Napoleon: Military strategy for everything
+   - Deadpool: Fourth-wall breaking chaos
+   - Buddha: Paradoxical enlightenment koans
+   - And 16 more distinct personalities!
+
+Ready to chat with history and fiction! 🌟
+""")
