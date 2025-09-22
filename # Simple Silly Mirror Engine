@@ -1,0 +1,304 @@
+# Simple Silly Mirror Engine
+# Makes any AI give mystical Cantona-style responses through self-reflection
+
+import ipywidgets as widgets
+from IPython.display import display, HTML, clear_output
+from datetime import datetime
+
+class UniversalAIClient:
+    """Simple universal AI client"""
+    
+    def __init__(self):
+        self.provider = None
+        self.client = None
+        self.model_name = None
+    
+    def setup_openai(self, api_key: str, model: str = "gpt-4"):
+        try:
+            import openai
+            self.client = openai.OpenAI(api_key=api_key)
+            self.provider = "openai"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"OpenAI setup failed: {str(e)}")
+    
+    def setup_anthropic(self, api_key: str, model: str = "claude-3-5-sonnet-20241022"):
+        try:
+            import anthropic
+            self.client = anthropic.Anthropic(api_key=api_key)
+            self.provider = "anthropic"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Anthropic setup failed: {str(e)}")
+    
+    def setup_google(self, api_key: str, model: str = "gemini-pro"):
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            self.client = genai.GenerativeModel(model)
+            self.provider = "google"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Google setup failed: {str(e)}")
+    
+    def call_ai(self, prompt: str, system_prompt: str = None) -> str:
+        """Call any AI provider"""
+        try:
+            if self.provider == "openai":
+                messages = []
+                if system_prompt:
+                    messages.append({"role": "system", "content": system_prompt})
+                messages.append({"role": "user", "content": prompt})
+                
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=messages,
+                    max_tokens=1500
+                )
+                return response.choices[0].message.content.strip()
+            
+            elif self.provider == "anthropic":
+                response = self.client.messages.create(
+                    model=self.model_name,
+                    max_tokens=1500,
+                    system=system_prompt or "You are a helpful AI assistant.",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                return response.content[0].text.strip()
+            
+            elif self.provider == "google":
+                if system_prompt:
+                    full_prompt = f"System: {system_prompt}\n\nUser: {prompt}"
+                else:
+                    full_prompt = prompt
+                response = self.client.generate_content(full_prompt)
+                return response.text.strip()
+                
+        except Exception as e:
+            raise RuntimeError(f"AI call failed: {str(e)}")
+
+class SillyMirrorEngine:
+    """Simple engine that makes AI give silly mystical responses"""
+    
+    def __init__(self):
+        self.ai_client = UniversalAIClient()
+        self.conversation_history = []
+        self.setup_interface()
+    
+    def setup_interface(self):
+        # Header
+        self.header = widgets.HTML(
+            value="""
+            <div style="background: linear-gradient(135deg, #8B4513 0%, #DAA520 100%); 
+                        color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h2>🔮 Silly Mirror Engine</h2>
+                <p>Ask serious questions, get mystical Cantona-style nonsense</p>
+            </div>
+            """
+        )
+        
+        # Provider selection
+        self.provider_dropdown = widgets.Dropdown(
+            options=['Select Provider', 'OpenAI (GPT)', 'Anthropic (Claude)', 'Google (Gemini)'],
+            value='Select Provider',
+            description='AI Provider:'
+        )
+        
+        # API key
+        self.api_key_input = widgets.Password(
+            placeholder='Enter API key',
+            description='API Key:'
+        )
+        
+        # Model
+        self.model_input = widgets.Text(
+            placeholder='e.g., gpt-4, claude-3-5-sonnet-20241022, gemini-pro',
+            description='Model:'
+        )
+        
+        # Setup button
+        self.setup_button = widgets.Button(
+            description='Connect',
+            button_style='primary'
+        )
+        
+        # Status
+        self.status_display = widgets.HTML(
+            value="<div>Please select AI provider and connect</div>"
+        )
+        
+        # Chat area
+        self.chat_display = widgets.HTML(
+            value="<div>Silly Mirror Engine ready - connect to AI first</div>",
+            layout=widgets.Layout(width='100%', min_height='300px')
+        )
+        
+        # Input
+        self.input_text = widgets.Textarea(
+            placeholder='Ask anything and get mystical nonsense back...',
+            layout=widgets.Layout(width='100%', height='100px')
+        )
+        
+        # Send button
+        self.send_button = widgets.Button(
+            description='Ask & Mirror',
+            button_style='success',
+            disabled=True
+        )
+        
+        # Clear button
+        self.clear_button = widgets.Button(
+            description='Clear',
+            button_style='warning'
+        )
+        
+        # Output
+        self.status_output = widgets.Output()
+        
+        # Bind events
+        self.setup_button.on_click(self.on_setup)
+        self.send_button.on_click(self.on_send)
+        self.clear_button.on_click(self.on_clear)
+    
+    def display_interface(self):
+        setup_section = widgets.VBox([
+            widgets.HTML("<h3>Setup AI Connection</h3>"),
+            widgets.HBox([self.provider_dropdown, self.setup_button]),
+            self.api_key_input,
+            self.model_input,
+            self.status_display
+        ])
+        
+        chat_section = widgets.VBox([
+            widgets.HTML("<h3>Silly Mirror Chat</h3>"),
+            self.chat_display,
+            self.input_text,
+            widgets.HBox([self.send_button, self.clear_button]),
+            self.status_output
+        ])
+        
+        display(widgets.VBox([
+            self.header,
+            setup_section,
+            chat_section
+        ]))
+    
+    def on_setup(self, button):
+        provider = self.provider_dropdown.value
+        api_key = self.api_key_input.value.strip()
+        model = self.model_input.value.strip()
+        
+        if provider == 'Select Provider':
+            self.status_display.value = "<div style='color: red;'>Please select provider</div>"
+            return
+        
+        try:
+            if provider == 'OpenAI (GPT)':
+                model = model or "gpt-4"
+                self.ai_client.setup_openai(api_key, model)
+            elif provider == 'Anthropic (Claude)':
+                model = model or "claude-3-5-sonnet-20241022"
+                self.ai_client.setup_anthropic(api_key, model)
+            elif provider == 'Google (Gemini)':
+                model = model or "gemini-pro"
+                self.ai_client.setup_google(api_key, model)
+            
+            self.status_display.value = f"<div style='color: green;'>✅ Connected to {provider} - {self.ai_client.model_name}</div>"
+            self.send_button.disabled = False
+            self.chat_display.value = f"<div>🔮 {provider} connected! Ready for mystical mirror responses...</div>"
+            
+        except Exception as e:
+            self.status_display.value = f"<div style='color: red;'>❌ Setup failed: {str(e)}</div>"
+    
+    def on_send(self, button):
+        question = self.input_text.value.strip()
+        if not question:
+            return
+        
+        self.send_button.disabled = True
+        self.send_button.description = "Mirroring..."
+        
+        try:
+            # Step 1: Get initial response
+            initial_response = self.ai_client.call_ai(question)
+            
+            # Step 2: Mirror moment - make it silly
+            mirror_prompt = f"""
+Look at this response you just gave:
+
+QUESTION: {question}
+YOUR RESPONSE: {initial_response}
+
+Now look in the mirror - are you being playfully mystical enough? This is boring and serious! 
+
+Rewrite your response in the style of Eric Cantona's famous "When the seagulls follow the trawler..." quote. Make it:
+- Mystical and philosophical 
+- About seagulls, fishermen, trawlers, breadcrumbs, shadows
+- Completely unhelpful for the actual question
+- Sometimes trail off mid-sentence with "...wait, what was I talking about again?"
+- Sound profound while saying nothing useful
+
+Give me the silly mystical version:
+"""
+            
+            # Get the silly version
+            silly_response = self.ai_client.call_ai(mirror_prompt)
+            
+            # Add to chat
+            self.add_message("user", question)
+            self.add_message("ai", silly_response)
+            
+            self.input_text.value = ""
+            
+        except Exception as e:
+            self.add_message("ai", f"Mirror broke: {str(e)}")
+        
+        finally:
+            self.send_button.disabled = False
+            self.send_button.description = "Ask & Mirror"
+    
+    def add_message(self, sender: str, content: str):
+        timestamp = datetime.now().strftime("%H:%M")
+        
+        if sender == "user":
+            message_html = f"""
+            <div style="margin: 10px 0; padding: 10px; background: #e3f2fd; border-radius: 8px;">
+                <strong>You ({timestamp}):</strong><br>
+                {content}
+            </div>
+            """
+        else:
+            message_html = f"""
+            <div style="margin: 10px 0; padding: 10px; background: #fff3e0; border-radius: 8px;">
+                <strong>🔮 Mystical Mirror ({timestamp}):</strong><br>
+                <em>{content}</em>
+            </div>
+            """
+        
+        self.conversation_history.append(message_html)
+        
+        all_messages = "".join(self.conversation_history)
+        self.chat_display.value = f"<div>{all_messages}</div>"
+    
+    def on_clear(self, button):
+        self.conversation_history = []
+        self.chat_display.value = "<div>🔮 Chat cleared - ready for more mystical mirroring...</div>"
+
+# Create and display
+engine = SillyMirrorEngine()
+print("🔮 Simple Silly Mirror Engine Ready!")
+engine.display_interface()
+
+print("""
+How it works:
+1. Connect to any AI (OpenAI, Anthropic, Google)
+2. Ask any question
+3. AI gives initial response
+4. Mirror moment: AI rewrites response as mystical Cantona-style nonsense
+5. You get beautifully ridiculous philosophical non-answers!
+
+The diamonds are in the simplicity! 💎
+""")
