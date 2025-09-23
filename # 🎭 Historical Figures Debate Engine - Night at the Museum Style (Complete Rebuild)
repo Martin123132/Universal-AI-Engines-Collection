@@ -1,0 +1,1093 @@
+# 🎭 Historical Figures Debate Engine - Night at the Museum Style (Complete Rebuild)
+# Educational AI debates between historical figures
+# Fresh implementation with expanded character roster
+
+import os
+import json
+import time
+import random
+from datetime import datetime
+from typing import Dict, List, Tuple, Optional
+import ipywidgets as widgets
+from IPython.display import display, HTML, clear_output
+
+print("🎭 Loading Complete Historical Debate Engine...")
+
+class UniversalAIClient:
+    """Universal AI client supporting multiple providers"""
+    
+    def __init__(self, client_id: str = "Client1"):
+        self.client_id = client_id
+        self.provider = None
+        self.client = None
+        self.model_name = None
+    
+    def setup_openai(self, api_key: str, model: str = "gpt-3.5-turbo"):
+        try:
+            import openai
+            self.client = openai.OpenAI(api_key=api_key)
+            self.provider = "openai"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"OpenAI setup failed: {str(e)}")
+    
+    def setup_anthropic(self, api_key: str, model: str = "claude-3-5-sonnet-20241022"):
+        try:
+            import anthropic
+            self.client = anthropic.Anthropic(api_key=api_key)
+            self.provider = "anthropic"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Anthropic setup failed: {str(e)}")
+    
+    def setup_gemini(self, api_key: str, model: str = "gemini-1.5-flash"):
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            self.client = genai.GenerativeModel(model)
+            self.provider = "gemini"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Gemini setup failed: {str(e)}")
+    
+    def call_ai(self, prompt: str, system_prompt: str = None) -> str:
+        try:
+            if self.provider == "openai":
+                messages = []
+                if system_prompt:
+                    messages.append({"role": "system", "content": system_prompt})
+                messages.append({"role": "user", "content": prompt})
+                
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=messages,
+                    max_tokens=600,
+                    temperature=0.8
+                )
+                return response.choices[0].message.content.strip()
+            
+            elif self.provider == "anthropic":
+                response = self.client.messages.create(
+                    model=self.model_name,
+                    max_tokens=600,
+                    temperature=0.8,
+                    system=system_prompt or "You are a helpful AI assistant.",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                return response.content[0].text.strip()
+            
+            elif self.provider == "gemini":
+                full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+                response = self.client.generate_content(full_prompt)
+                return response.text.strip()
+                
+        except Exception as e:
+            raise RuntimeError(f"AI call failed ({self.provider}): {str(e)}")
+
+class CompleteHistoricalDebateEngine:
+    """Complete rebuild with all historical figures"""
+    
+    def __init__(self):
+        self.ai_client_1 = UniversalAIClient("Character A")
+        self.ai_client_2 = UniversalAIClient("Character B")
+        
+        # Complete expanded roster of historical figures
+        self.historical_figures = {
+            # Scientists & Mathematicians
+            "🧮 Isaac Newton": {
+                "period": "1643-1727",
+                "specialty": "Physics, Mathematics, Astronomy",
+                "personality": "Methodical, sometimes arrogant, brilliant mathematician. Speaks with precision about natural laws. 'For every action, there is an equal and opposite reaction.' References his Principia and discoveries about gravity and optics.",
+                "speech_style": "Formal, mathematical, references to natural philosophy and divine geometry."
+            },
+            
+            "⚡ Albert Einstein": {
+                "period": "1879-1955", 
+                "specialty": "Theoretical Physics, Relativity",
+                "personality": "Playful genius who uses thought experiments. Makes analogies about trains and elevators. Challenges absolute concepts of time and space. 'Imagination is more important than knowledge.'",
+                "speech_style": "Thoughtful, uses metaphors, questions fundamental assumptions."
+            },
+            
+            "🔬 Charles Darwin": {
+                "period": "1809-1882",
+                "specialty": "Natural Selection, Evolution",
+                "personality": "Cautious observer who revolutionized biology. References his voyage on the Beagle. 'It is not the strongest that survives, but the most adaptable.' Methodical and evidence-based.",
+                "speech_style": "Observational, references to natural specimens and gradual change."
+            },
+            
+            "⚗️ Marie Curie": {
+                "period": "1867-1934",
+                "specialty": "Radioactivity, Chemistry, Physics",
+                "personality": "Determined pioneer who overcame gender barriers. First woman to win Nobel Prize. 'Nothing in life is to be feared, it is only to be understood.' Passionate about scientific discovery.",
+                "speech_style": "Determined, precise, references to radioactive elements and scientific method."
+            },
+            
+            "🔭 Galileo Galilei": {
+                "period": "1564-1642",
+                "specialty": "Astronomy, Physics, Scientific Method",
+                "personality": "Defender of observation over dogma. 'And yet it moves!' Used telescopes to challenge established beliefs. Passionate about mathematical description of nature.",
+                "speech_style": "Passionate, references to celestial observations and mathematical proofs."
+            },
+            
+            "⚙️ Archimedes": {
+                "period": "287-212 BCE",
+                "specialty": "Mathematics, Physics, Engineering",
+                "personality": "Brilliant inventor and mathematician. 'Give me a lever long enough and I shall move the world.' Discovers principles through hands-on experimentation. Famous for his 'Eureka!' moment.",
+                "speech_style": "Enthusiastic about mechanical principles, uses practical examples and geometric proofs."
+            },
+            
+            "📐 Euclid": {
+                "period": "c. 300 BCE",
+                "specialty": "Geometry, Mathematics",
+                "personality": "Systematic mathematician who organized geometric knowledge. 'There is no royal road to geometry.' Believes in logical proof and axiomatic reasoning.",
+                "speech_style": "Methodical, step-by-step logical reasoning, references to geometric principles."
+            },
+            
+            "🌍 Copernicus": {
+                "period": "1473-1543",
+                "specialty": "Astronomy, Heliocentrism",
+                "personality": "Revolutionary astronomer who placed the Sun at the center. Cautious about publishing controversial ideas. 'At rest in the middle of everything is the Sun.'",
+                "speech_style": "Careful, mathematical, references to planetary observations and calculations."
+            },
+            
+            "🌱 Gregor Mendel": {
+                "period": "1822-1884",
+                "specialty": "Genetics, Botany",
+                "personality": "Meticulous monk-scientist who discovered heredity laws through pea plant experiments. Patient observer who found patterns in nature's inheritance.",
+                "speech_style": "Methodical, references to plant breeding experiments and mathematical ratios."
+            },
+            
+            "⚡ Nikola Tesla": {
+                "period": "1856-1943",
+                "specialty": "Electrical Engineering, Invention",
+                "personality": "Visionary inventor obsessed with electricity and wireless power. Eccentric genius who could visualize inventions perfectly. Often clashed with Edison.",
+                "speech_style": "Passionate about electrical phenomena, futuristic visions, references to wireless energy."
+            },
+            
+            "🔬 Louis Pasteur": {
+                "period": "1822-1895",
+                "specialty": "Microbiology, Vaccination, Pasteurization",
+                "personality": "Meticulous scientist who proved germ theory. 'Chance favors the prepared mind.' Passionate about using science to help humanity.",
+                "speech_style": "Precise, methodical, references to microscopic worlds and public health."
+            },
+            
+            "🧬 Rosalind Franklin": {
+                "period": "1920-1958",
+                "specialty": "X-ray Crystallography, DNA Structure",
+                "personality": "Precise scientist whose work was crucial to understanding DNA structure. Methodical and dedicated to scientific accuracy.",
+                "speech_style": "Scientific precision, references to molecular structures and experimental evidence."
+            },
+            
+            "🌿 Rachel Carson": {
+                "period": "1907-1964",
+                "specialty": "Marine Biology, Environmental Conservation",
+                "personality": "Writer-scientist who awakened environmental consciousness. Author of 'Silent Spring.' 'In every outthrust headland, in every curving beach, in every grain of sand there is the story of the earth.'",
+                "speech_style": "Lyrical scientific writing, references to interconnected nature and environmental threats."
+            },
+
+            # Philosophers & Thinkers
+            "🤔 Socrates": {
+                "period": "470-399 BCE",
+                "specialty": "Philosophy, Ethics, Socratic Method",
+                "personality": "Questions everything, claims to know nothing. 'The unexamined life is not worth living.' Uses questions to reveal ignorance and seek truth.",
+                "speech_style": "Interrogative, humble, constantly asking 'But what do you mean by...' and 'How can we know...'"
+            },
+            
+            "🧠 Aristotle": {
+                "period": "384-322 BCE",
+                "specialty": "Logic, Ethics, Natural Philosophy",
+                "personality": "Systematic categorizer of knowledge. Student of Plato but disagreed on many points. 'We are what we repeatedly do.' Believes in empirical observation.",
+                "speech_style": "Systematic, categorizes ideas, references to logic and natural order."
+            },
+            
+            "💭 Plato": {
+                "period": "428-348 BCE",
+                "specialty": "Philosophy, Political Theory, Metaphysics",
+                "personality": "Idealist who believes in perfect forms beyond physical world. 'The cave allegory shows us that most people mistake shadows for reality.' Teacher of Aristotle.",
+                "speech_style": "Metaphorical, references to ideal forms and the Republic."
+            },
+            
+            "🕯️ Voltaire": {
+                "period": "1694-1778",
+                "specialty": "Philosophy, Literature, Civil Liberties",
+                "personality": "Witty critic of religious dogma and political tyranny. 'I may disagree with what you say, but I will defend to the death your right to say it.' Champion of reason and tolerance.",
+                "speech_style": "Sharp wit, satirical, defends freedom of thought and speech."
+            },
+            
+            "🏛️ Immanuel Kant": {
+                "period": "1724-1804",
+                "specialty": "Philosophy, Ethics, Metaphysics",
+                "personality": "Rigorous thinker who sought to establish limits of reason. 'Act only according to maxims you could will to be universal laws.' Precise and systematic.",
+                "speech_style": "Complex but precise, references to categorical imperatives and duty."
+            },
+            
+            "📚 John Locke": {
+                "period": "1632-1704",
+                "specialty": "Political Philosophy, Empiricism",
+                "personality": "Enlightenment thinker who emphasized natural rights and government by consent. 'Life, liberty, and property' are fundamental rights.",
+                "speech_style": "Rational, references to natural law and social contract theory."
+            },
+            
+            "⚖️ John Stuart Mill": {
+                "period": "1806-1873",
+                "specialty": "Utilitarianism, Liberty, Political Philosophy",
+                "personality": "Advocate for individual liberty and utilitarian ethics. 'The only purpose for which power can be rightfully exercised over any member of a civilized community, against his will, is to prevent harm to others.'",
+                "speech_style": "Clear reasoning about liberty, utility, and the greatest good for the greatest number."
+            },
+            
+            "🌿 Lao Tzu": {
+                "period": "6th century BCE",
+                "specialty": "Taoism, Eastern Philosophy",
+                "personality": "Mystical philosopher who emphasized harmony with the Tao (the Way). 'The journey of a thousand miles begins with a single step.' Values simplicity and natural order.",
+                "speech_style": "Poetic, paradoxical, references to the natural flow of existence and wu-wei (non-action)."
+            },
+            
+            "🍇 Epicurus": {
+                "period": "341-270 BCE",
+                "specialty": "Ethics, Philosophy of Pleasure",
+                "personality": "Taught that pleasure is the highest good, but emphasized intellectual pleasures over physical ones. 'Death is nothing to us.' Sought tranquility and freedom from fear.",
+                "speech_style": "Calm, discusses pleasure, virtue, and the good life with practical wisdom."
+            },
+
+            # Historical Leaders & Reformers
+            "🇺🇸 Benjamin Franklin": {
+                "period": "1706-1790",
+                "specialty": "Science, Diplomacy, Practical Philosophy",
+                "personality": "Practical inventor and diplomat. 'Early to bed and early to rise, makes a man healthy, wealthy, and wise.' Combines scientific inquiry with common sense.",
+                "speech_style": "Practical wisdom, folksy sayings, references to experiments and diplomacy."
+            },
+            
+            "👑 Julius Caesar": {
+                "period": "100-44 BCE",
+                "specialty": "Military Leadership, Politics, Roman Empire",
+                "personality": "Ambitious military genius who crossed the Rubicon. Often speaks of himself in third person. 'I came, I saw, I conquered.' Strategic and charismatic.",
+                "speech_style": "Authoritative, references to military campaigns and Roman glory."
+            },
+            
+            "⚔️ Alexander the Great": {
+                "period": "356-323 BCE",
+                "specialty": "Military Conquest, Empire Building",
+                "personality": "Young conqueror who built vast empire. Student of Aristotle. 'There is nothing impossible to him who will try.' Ambitious and visionary.",
+                "speech_style": "Bold, references to conquest and spreading Greek culture."
+            },
+            
+            "👸 Elizabeth I": {
+                "period": "1533-1603",
+                "specialty": "English Renaissance, Royal Leadership",
+                "personality": "The Virgin Queen who defended England against the Spanish Armada. 'I have the heart and stomach of a king.' Strong, clever, and politically astute.",
+                "speech_style": "Regal, politically savvy, references to English glory and independence."
+            },
+            
+            "⚖️ Abraham Lincoln": {
+                "period": "1809-1865",
+                "specialty": "Civil War, Abolition, American Union",
+                "personality": "Self-taught lawyer who preserved the Union and freed the slaves. 'A house divided against itself cannot stand.' Humble origins but great moral conviction.",
+                "speech_style": "Biblical references, folksy wisdom, moral arguments about equality."
+            },
+
+            # Women Pioneers & Rights Advocates
+            "🗽 Mary Wollstonecraft": {
+                "period": "1759-1797",
+                "specialty": "Women's Rights, Education",
+                "personality": "Early feminist philosopher. Wrote 'Vindication of the Rights of Woman.' Believed education was key to equality. 'It is justice, not charity, that is wanting in the world.'",
+                "speech_style": "Rational argument for equality, references to education and reason."
+            },
+            
+            "🗳️ Elizabeth Cady Stanton": {
+                "period": "1815-1902",
+                "specialty": "Women's Rights, Social Reform",
+                "personality": "Pioneer of women's suffrage and equality. Organized Seneca Falls Convention. 'The right is ours. Have it we must. Use it we will.' Passionate about justice.",
+                "speech_style": "Passionate about equality, references to natural rights and justice."
+            },
+            
+            "🦴 Mary Anning": {
+                "period": "1799-1847",
+                "specialty": "Paleontology, Geology",
+                "personality": "Self-taught fossil hunter who discovered major marine reptiles. Overcame class and gender barriers. 'The earth tells its own story if we learn to read it.'",
+                "speech_style": "Practical observation, references to fossils and geological time."
+            },
+            
+            "🔬 Hypatia": {
+                "period": "c. 350-415 CE",
+                "specialty": "Mathematics, Astronomy, Philosophy",
+                "personality": "Ancient mathematician and philosopher in Alexandria. One of the first recorded female mathematicians. Taught Neoplatonism and mathematical sciences.",
+                "speech_style": "Mathematical precision combined with philosophical wisdom, references to geometric harmony."
+            },
+
+            # Artists & Writers  
+            "🎨 Leonardo da Vinci": {
+                "period": "1452-1519",
+                "specialty": "Art, Engineering, Anatomy, Invention",
+                "personality": "Renaissance polymath who connected art and science. 'Learning never exhausts the mind.' Constantly sketching and inventing. Sees connections everywhere.",
+                "speech_style": "Curious about everything, connects art to science, references to anatomical studies."
+            },
+            
+            "🎭 William Shakespeare": {
+                "period": "1564-1616",
+                "specialty": "Literature, Drama, Human Nature",
+                "personality": "Master of human psychology and language. 'All the world's a stage.' Uses dramatic metaphors and understands human motivations deeply.",
+                "speech_style": "Poetic, dramatic, references to human nature and the stage of life."
+            },
+            
+            "🖼️ Michelangelo": {
+                "period": "1475-1564",
+                "specialty": "Renaissance Art, Sculpture",
+                "personality": "Passionate about art and perfection. Reference the Sistine Chapel and David. Be temperamental about artistic vision. 'I saw the angel in the marble and carved until I set him free.'",
+                "speech_style": "Artistic passion, references to divine inspiration and Renaissance ideals."
+            },
+            
+            "🎵 Johann Sebastian Bach": {
+                "period": "1685-1750",
+                "specialty": "Baroque Music, Composition",
+                "personality": "Master composer who saw music as mathematical and divine. Prolific creator of complex, structured compositions. Deeply religious.",
+                "speech_style": "Musical metaphors, references to mathematical harmony and divine inspiration."
+            },
+            
+            "📖 Jane Austen": {
+                "period": "1775-1817",
+                "specialty": "Literature, Social Commentary",
+                "personality": "Witty observer of social manners and marriage customs. 'It is a truth universally acknowledged...' Sharp social critic with gentle humor.",
+                "speech_style": "Witty, observational, references to social customs and human relationships."
+            },
+
+            # Diverse Cultural & Religious Figures
+            "☪️ Ibn Rushd (Averroes)": {
+                "period": "1126-1198",
+                "specialty": "Islamic Philosophy, Aristotelian Thought",
+                "personality": "Islamic philosopher who bridged Greek and Islamic thought. Defended reason and philosophy. 'Ignorance leads to fear, fear leads to hatred, and hatred leads to violence.'",
+                "speech_style": "Rational, bridges different philosophical traditions, references to reason and logic."
+            },
+            
+            "☯️ Zhu Xi": {
+                "period": "1130-1200",
+                "specialty": "Neo-Confucianism, Chinese Philosophy",
+                "personality": "Synthesized Confucian ethics with metaphysical speculation. Emphasized cultivation of the mind and moral character.",
+                "speech_style": "References to li (principle), qi (material force), and moral cultivation."
+            },
+            
+            "✍️ Christine de Pizan": {
+                "period": "1364-1430",
+                "specialty": "Medieval Literature, Early Feminism",
+                "personality": "First professional female writer in Europe. Defended women's capabilities and virtue. Wrote 'The Book of the City of Ladies.'",
+                "speech_style": "Eloquent defender of women's dignity, references to historical examples of female excellence."
+            },
+            
+            "☸️ Confucius": {
+                "period": "551-479 BCE",
+                "specialty": "Chinese Philosophy, Ethics, Governance",
+                "personality": "Teacher who emphasized virtue, social harmony, and proper relationships. 'By three methods we may learn wisdom: reflection, imitation, and experience.'",
+                "speech_style": "Practical wisdom, references to virtue, filial piety, and social order."
+            },
+            
+            "🕌 Rumi": {
+                "period": "1207-1273",
+                "specialty": "Persian Poetry, Sufism",
+                "personality": "Mystical poet who wrote about divine love and spiritual union. 'Let yourself be silently drawn by the strange pull of what you really love. It will not lead you astray.'",
+                "speech_style": "Poetic, mystical, references to divine love and spiritual experience."
+            }
+        }
+        
+        self.debate_topics = {
+            "🌍 Nature of Reality": [
+                "Is the physical world all that exists, or is there a deeper reality?",
+                "How can we distinguish between what is real and what is illusion?",
+                "Does consciousness create reality or reflect it?"
+            ],
+            
+            "🔬 Scientific Method": [
+                "Should we trust observation and experiment above all else?",
+                "Is mathematics the language of nature, or just a useful tool?",
+                "Can science explain everything, or are there limits to scientific knowledge?"
+            ],
+            
+            "🏛️ Society & Governance": [
+                "What is the best form of government for human flourishing?",
+                "Should individual rights or collective good take priority?",
+                "How should society balance freedom and order?"
+            ],
+            
+            "🎓 Education & Knowledge": [
+                "How should we educate the next generation?",
+                "Is knowledge innate or acquired through experience?",
+                "What subjects are most important for human development?"
+            ],
+            
+            "⚖️ Ethics & Morality": [
+                "What makes an action right or wrong?",
+                "Are moral truths universal or relative to culture?",
+                "How should we balance individual desires with moral duties?"
+            ],
+            
+            "🔮 Progress & Change": [
+                "Is human society naturally progressing toward something better?",
+                "Should we embrace change or preserve tradition?",
+                "What role does technology play in human advancement?"
+            ],
+            
+            "🎨 Art & Creativity": [
+                "What is the purpose of art in human life?",
+                "Should art educate, inspire, or simply entertain?",
+                "How do creativity and scientific discovery relate?"
+            ],
+            
+            "⚡ Forces of Nature": [
+                "What fundamental forces govern the universe?",
+                "How do we explain gravity, light, and energy?",
+                "Is the universe mechanical or something more mysterious?"
+            ]
+        }
+        
+        self.create_interface()
+    
+    def create_interface(self):
+        """Create fresh interface with all characters"""
+        
+        # Header
+        self.header = widgets.HTML(
+            value="""
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        color: white; padding: 25px; border-radius: 15px; margin-bottom: 20px; text-align: center;">
+                <h1>🎭 Night at the Museum: Historical Debates</h1>
+                <p style="font-size: 18px;">Watch history's greatest minds debate the big questions!</p>
+                <p><em>Educational AI conversations between legendary thinkers</em></p>
+            </div>
+            """
+        )
+        
+        # AI Setup
+        self.provider_a = widgets.Dropdown(
+            options=['Select Provider', 'OpenAI', 'Anthropic', 'Google Gemini'],
+            value='Select Provider',
+            description='Provider A:',
+            layout=widgets.Layout(width='200px')
+        )
+        
+        self.api_key_a = widgets.Password(
+            placeholder='API Key for Character A',
+            description='API Key A:',
+            layout=widgets.Layout(width='300px')
+        )
+        
+        self.connect_a = widgets.Button(
+            description='Connect A',
+            button_style='primary',
+            layout=widgets.Layout(width='100px')
+        )
+        
+        self.provider_b = widgets.Dropdown(
+            options=['Select Provider', 'OpenAI', 'Anthropic', 'Google Gemini'],
+            value='Select Provider',
+            description='Provider B:',
+            layout=widgets.Layout(width='200px')
+        )
+        
+        self.api_key_b = widgets.Password(
+            placeholder='API Key for Character B',
+            description='API Key B:',
+            layout=widgets.Layout(width='300px')
+        )
+        
+        self.connect_b = widgets.Button(
+            description='Connect B',
+            button_style='primary',
+            layout=widgets.Layout(width='100px')
+        )
+        
+        self.ai_status = widgets.HTML("<div style='margin: 15px 0; color: red;'>❌ Both AI clients needed for debate</div>")
+        
+        # Character Selection
+        figure_names = ['🎭 Select Character'] + list(self.historical_figures.keys())
+        
+        self.character_a = widgets.Dropdown(
+            options=figure_names,
+            value='🎭 Select Character',
+            description='Character A:',
+            layout=widgets.Layout(width='400px')
+        )
+        
+        self.character_b = widgets.Dropdown(
+            options=figure_names,
+            value='🎭 Select Character',
+            description='Character B:',
+            layout=widgets.Layout(width='400px')
+        )
+        
+        self.character_preview = widgets.HTML("<div style='margin: 15px 0; padding: 15px; background: #f8f9fa; border-radius: 10px;'><em>Select characters to see their backgrounds</em></div>")
+        
+        # Topic Selection
+        self.topic_category = widgets.Dropdown(
+            options=['🎯 Select Topic Category'] + list(self.debate_topics.keys()),
+            value='🎯 Select Topic Category',
+            description='Category:',
+            layout=widgets.Layout(width='400px')
+        )
+        
+        self.topic_question = widgets.Dropdown(
+            options=['📝 Choose specific question...'],
+            value='📝 Choose specific question...',
+            description='Question:',
+            layout=widgets.Layout(width='600px')
+        )
+        
+        self.custom_topic = widgets.Textarea(
+            placeholder='Or write your own debate topic/question...',
+            description='Custom Topic:',
+            layout=widgets.Layout(width='600px', height='80px')
+        )
+        
+        # Controls
+        self.rounds_slider = widgets.IntSlider(
+            value=4,
+            min=2,
+            max=8,
+            step=1,
+            description='Rounds:',
+            tooltip='Number of back-and-forth exchanges'
+        )
+        
+        self.tone_dropdown = widgets.Dropdown(
+            options=['Balanced', 'Heated', 'Scholarly', 'Friendly'],
+            value='Balanced',
+            description='Tone:',
+            tooltip='Overall tone of the debate'
+        )
+        
+        self.start_button = widgets.Button(
+            description='🎭 Start Historical Debate!',
+            button_style='success',
+            disabled=True,
+            layout=widgets.Layout(width='300px', height='50px')
+        )
+        
+        self.save_button = widgets.Button(
+            description='💾 Save Debate Transcript',
+            button_style='info',
+            disabled=True,
+            layout=widgets.Layout(width='200px')
+        )
+        
+        # Output areas
+        self.debate_output = widgets.Output()
+        self.status_output = widgets.Output()
+        
+        # Bind events
+        self.connect_a.on_click(lambda b: self.setup_ai_client('A'))
+        self.connect_b.on_click(lambda b: self.setup_ai_client('B'))
+        self.character_a.observe(self.update_character_preview, names='value')
+        self.character_b.observe(self.update_character_preview, names='value')
+        self.topic_category.observe(self.update_topic_questions, names='value')
+        self.topic_question.observe(lambda change: self.check_ready_state(), names='value')
+        self.custom_topic.observe(lambda change: self.check_ready_state(), names='value')
+        self.start_button.on_click(self.start_debate)
+        self.save_button.on_click(self.save_transcript)
+        
+        self.last_debate_transcript = ""
+    
+    def display_interface(self):
+        """Display the complete interface"""
+        
+        # AI Setup section
+        ai_setup = widgets.VBox([
+            widgets.HTML("<h3>🤖 AI Setup (Use Two Different API Keys for Best Results)</h3>"),
+            widgets.HTML("<h4 style='color: #2E86AB;'>🎭 Character A (First Speaker)</h4>"),
+            widgets.HBox([self.provider_a, self.api_key_a, self.connect_a]),
+            widgets.HTML("<h4 style='color: #A23B72;'>🎭 Character B (Second Speaker)</h4>"),
+            widgets.HBox([self.provider_b, self.api_key_b, self.connect_b]),
+            self.ai_status
+        ])
+        
+        # Character Selection section
+        character_section = widgets.VBox([
+            widgets.HTML("<h3>👥 Choose Your Debaters</h3>"),
+            widgets.HBox([
+                widgets.VBox([
+                    widgets.HTML("<h4 style='color: #2E86AB;'>Character A (Opens the debate)</h4>"),
+                    self.character_a
+                ]),
+                widgets.HTML("<div style='padding: 20px; font-size: 30px;'>⚔️</div>"),
+                widgets.VBox([
+                    widgets.HTML("<h4 style='color: #A23B72;'>Character B (Responds & challenges)</h4>"),
+                    self.character_b
+                ])
+            ]),
+            self.character_preview
+        ])
+        
+        # Topic Selection section
+        topic_section = widgets.VBox([
+            widgets.HTML("<h3>💭 Choose Debate Topic</h3>"),
+            self.topic_category,
+            self.topic_question,
+            self.custom_topic
+        ])
+        
+        # Controls section
+        control_section = widgets.VBox([
+            widgets.HTML("<h3>🎬 Debate Controls</h3>"),
+            widgets.HBox([self.rounds_slider, self.tone_dropdown]),
+            widgets.HBox([self.start_button, self.save_button])
+        ])
+        
+        # Main display
+        display(widgets.VBox([
+            self.header,
+            ai_setup,
+            character_section,
+            topic_section,
+            control_section,
+            self.debate_output,
+            self.status_output
+        ]))
+    
+    def setup_ai_client(self, client_id: str):
+        """Setup AI client A or B"""
+        try:
+            if client_id == 'A':
+                provider = self.provider_a.value
+                api_key = self.api_key_a.value.strip()
+                client = self.ai_client_1
+            else:
+                provider = self.provider_b.value  
+                api_key = self.api_key_b.value.strip()
+                client = self.ai_client_2
+            
+            if provider == 'Select Provider' or not api_key:
+                with self.status_output:
+                    print(f"❌ Please select provider and enter API key for Character {client_id}")
+                return
+            
+            # Setup the appropriate client
+            if provider == 'OpenAI':
+                client.setup_openai(api_key)
+            elif provider == 'Anthropic':
+                client.setup_anthropic(api_key)
+            elif provider == 'Google Gemini':
+                client.setup_gemini(api_key)
+            
+            # Update status
+            ai_a_ready = self.ai_client_1.provider is not None
+            ai_b_ready = self.ai_client_2.provider is not None
+            
+            if ai_a_ready and ai_b_ready:
+                self.ai_status.value = "<div style='margin: 15px 0; color: green;'>✅ Both AI clients connected and ready!</div>"
+            elif ai_a_ready:
+                self.ai_status.value = "<div style='margin: 15px 0; color: orange;'>⚠️ Character A connected, need Character B</div>"
+            elif ai_b_ready:
+                self.ai_status.value = "<div style='margin: 15px 0; color: orange;'>⚠️ Character B connected, need Character A</div>"
+            
+            with self.status_output:
+                print(f"✅ Character {client_id}: Connected to {provider}")
+            
+            self.check_ready_state()
+            
+        except Exception as e:
+            with self.status_output:
+                print(f"❌ Character {client_id} setup failed: {str(e)}")
+    
+    def update_character_preview(self, change):
+        """Update character preview when selections change"""
+        char_a = self.character_a.value
+        char_b = self.character_b.value
+        
+        preview_html = "<div style='display: flex; justify-content: space-between;'>"
+        
+        # Character A preview
+        if char_a != '🎭 Select Character':
+            char_info = self.historical_figures[char_a]
+            preview_html += f"""
+            <div style='width: 45%; padding: 15px; background: #e3f2fd; border-radius: 10px; border-left: 4px solid #2E86AB;'>
+                <h5 style='color: #2E86AB; margin-top: 0;'>{char_a}</h5>
+                <p><strong>Period:</strong> {char_info['period']}</p>
+                <p><strong>Expertise:</strong> {char_info['specialty']}</p>
+                <p style='font-style: italic; font-size: 14px;'>{char_info['personality'][:100]}...</p>
+            </div>
+            """
+        else:
+            preview_html += "<div style='width: 45%; padding: 15px; background: #f5f5f5; border-radius: 10px; text-align: center;'>Select Character A</div>"
+        
+        preview_html += "<div style='width: 6%; text-align: center; font-size: 24px; padding-top: 30px;'>⚔️</div>"
+        
+        # Character B preview
+        if char_b != '🎭 Select Character':
+            char_info = self.historical_figures[char_b]
+            preview_html += f"""
+            <div style='width: 45%; padding: 15px; background: #fce4ec; border-radius: 10px; border-left: 4px solid #A23B72;'>
+                <h5 style='color: #A23B72; margin-top: 0;'>{char_b}</h5>
+                <p><strong>Period:</strong> {char_info['period']}</p>
+                <p><strong>Expertise:</strong> {char_info['specialty']}</p>
+                <p style='font-style: italic; font-size: 14px;'>{char_info['personality'][:100]}...</p>
+            </div>
+            """
+        else:
+            preview_html += "<div style='width: 45%; padding: 15px; background: #f5f5f5; border-radius: 10px; text-align: center;'>Select Character B</div>"
+        
+        preview_html += "</div>"
+        
+        self.character_preview.value = preview_html
+        
+        self.check_ready_state()
+    
+    def update_topic_questions(self, change):
+        """Update available questions when topic category changes"""
+        category = self.topic_category.value
+        
+        if category == '🎯 Select Topic Category':
+            self.topic_question.options = ['📝 Choose specific question...']
+            self.topic_question.value = '📝 Choose specific question...'
+        else:
+            questions = self.debate_topics[category]
+            self.topic_question.options = ['📝 Choose specific question...'] + questions
+            self.topic_question.value = '📝 Choose specific question...'
+    
+    def check_ready_state(self):
+        """Check if everything is ready to start debate"""
+        ai_ready = (self.ai_client_1.provider is not None and 
+                   self.ai_client_2.provider is not None)
+        
+        chars_ready = (self.character_a.value != '🎭 Select Character' and 
+                      self.character_b.value != '🎭 Select Character')
+        
+        topic_ready = (self.topic_question.value != '📝 Choose specific question...' or 
+                      self.custom_topic.value.strip())
+        
+        if ai_ready and chars_ready and topic_ready:
+            self.start_button.disabled = False
+            self.start_button.description = '🎭 Start Historical Debate!'
+        else:
+            self.start_button.disabled = True
+    
+    def start_debate(self, button):
+        """Start the historical debate"""
+        # Validate inputs
+        if self.character_a.value == self.character_b.value:
+            with self.status_output:
+                print("❌ Please select two different characters for the debate!")
+            return
+        
+        # Get debate topic
+        if self.custom_topic.value.strip():
+            topic = self.custom_topic.value.strip()
+        else:
+            topic = self.topic_question.value
+        
+        if not topic or topic == '📝 Choose specific question...':
+            with self.status_output:
+                print("❌ Please select or enter a debate topic!")
+            return
+        
+        # Disable button and start debate
+        self.start_button.disabled = True
+        self.start_button.description = "🎭 Debate in Progress..."
+        
+        try:
+            with self.debate_output:
+                self.debate_output.clear_output()
+                
+                # Show debate header
+                char_a_name = self.character_a.value
+                char_b_name = self.character_b.value
+                rounds = self.rounds_slider.value
+                tone = self.tone_dropdown.value
+                
+                display(HTML(f"""
+                <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                            color: white; padding: 20px; border-radius: 15px; margin-bottom: 20px;">
+                    <h2>🎭 Historical Debate: Night at the Museum</h2>
+                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                        <div style="text-align: center;">
+                            <h3 style="color: #E3F2FD;">{char_a_name}</h3>
+                            <p>Opening Position</p>
+                        </div>
+                        <div style="font-size: 40px;">⚔️</div>
+                        <div style="text-align: center;">
+                            <h3 style="color: #FCE4EC;">{char_b_name}</h3>  
+                            <p>Challenging Response</p>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 15px;">
+                        <h4>📝 Topic: {topic}</h4>
+                        <p><strong>Rounds:</strong> {rounds} • <strong>Tone:</strong> {tone}</p>
+                    </div>
+                </div>
+                """))
+                
+                # Conduct the debate
+                debate_transcript = self.conduct_debate(
+                    char_a_name, char_b_name, topic, rounds, tone
+                )
+                
+                self.last_debate_transcript = debate_transcript
+                self.save_button.disabled = False
+                
+                # Show completion message
+                display(HTML(f"""
+                <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; margin-top: 20px; text-align: center;">
+                    <h3>🎉 Historical Debate Complete!</h3>
+                    <p>The great minds have shared their wisdom. Use the save button to download the full transcript.</p>
+                </div>
+                """))
+        
+        except Exception as e:
+            with self.status_output:
+                print(f"❌ Debate failed: {str(e)}")
+        
+        finally:
+            self.start_button.disabled = False
+            self.start_button.description = "🎭 Start Historical Debate!"
+    
+    def conduct_debate(self, char_a_name: str, char_b_name: str, topic: str, rounds: int, tone: str) -> str:
+        """Conduct the actual debate between historical figures"""
+        
+        char_a_info = self.historical_figures[char_a_name]
+        char_b_info = self.historical_figures[char_b_name]
+        
+        # Build conversation history
+        conversation_history = []
+        debate_transcript = f"🎭 Historical Debate Transcript\n"
+        debate_transcript += f"Topic: {topic}\n"
+        debate_transcript += f"Participants: {char_a_name} vs {char_b_name}\n"
+        debate_transcript += f"Date: {datetime.now().strftime('%Y-%m-%d %H:%M')}\n"
+        debate_transcript += "="*80 + "\n\n"
+        
+        # Tone adjustments
+        tone_prompts = {
+            "Balanced": "Be respectful but firm in your position. Acknowledge good points from your opponent.",
+            "Heated": "Be passionate and forceful in defending your ideas. Challenge your opponent directly.",
+            "Scholarly": "Use formal academic language. Reference specific works and evidence.",
+            "Friendly": "Be warm and collegial while still making your points. Find common ground where possible."
+        }
+        
+        tone_instruction = tone_prompts.get(tone, tone_prompts["Balanced"])
+        
+        # Character A opens the debate
+        print(f"Round 1: {char_a_name} opens the debate...")
+        
+        char_a_system = f"""You are {char_a_name} ({char_a_info['period']}), expert in {char_a_info['specialty']}.
+
+PERSONALITY: {char_a_info['personality']}
+SPEECH STYLE: {char_a_info['speech_style']}
+
+You are in a scholarly debate at a grand museum where historical figures have come to life. 
+{tone_instruction}
+
+Stay completely in character. Reference your historical period, discoveries, and beliefs.
+Keep responses to 2-3 paragraphs maximum for good debate flow."""
+        
+        opening_prompt = f"""You are opening a debate on this topic: "{topic}"
+
+Present your initial position on this question. Draw from your historical knowledge and expertise.
+This is the opening statement, so establish your main argument clearly."""
+        
+        char_a_response = self.ai_client_1.call_ai(opening_prompt, char_a_system)
+        conversation_history.append(f"OPENING - {char_a_name}: {char_a_response}")
+        
+        # Display round
+        display(HTML(f"""
+        <div style="background: #e3f2fd; padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 5px solid #2E86AB;">
+            <h4 style="color: #2E86AB; margin-top: 0;">🎯 Opening Statement - {char_a_name}</h4>
+            <p style="font-style: italic; line-height: 1.6;">{char_a_response}</p>
+        </div>
+        """))
+        
+        debate_transcript += f"OPENING STATEMENT - {char_a_name}:\n{char_a_response}\n\n"
+        time.sleep(1)  # Brief pause for dramatic effect
+        
+        # Character B responds
+        print(f"Round 1: {char_b_name} responds...")
+        
+        char_b_system = f"""You are {char_b_name} ({char_b_info['period']}), expert in {char_b_info['specialty']}.
+
+PERSONALITY: {char_b_info['personality']}  
+SPEECH STYLE: {char_b_info['speech_style']}
+
+You are in a scholarly debate at a grand museum where historical figures have come to life.
+{tone_instruction}
+
+Stay completely in character. Reference your historical period, discoveries, and beliefs.
+Keep responses to 2-3 paragraphs maximum for good debate flow."""
+        
+        response_prompt = f"""You are responding to {char_a_name}'s opening statement in this debate: "{topic}"
+
+{char_a_name} just said: "{char_a_response}"
+
+Respond with your perspective. You can agree on some points while disagreeing on others, or present a completely different viewpoint. Address their specific points."""
+        
+        char_b_response = self.ai_client_2.call_ai(response_prompt, char_b_system)
+        conversation_history.append(f"RESPONSE - {char_b_name}: {char_b_response}")
+        
+        display(HTML(f"""
+        <div style="background: #fce4ec; padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 5px solid #A23B72;">
+            <h4 style="color: #A23B72; margin-top: 0;">🎯 Response - {char_b_name}</h4>
+            <p style="font-style: italic; line-height: 1.6;">{char_b_response}</p>
+        </div>
+        """))
+        
+        debate_transcript += f"RESPONSE - {char_b_name}:\n{char_b_response}\n\n"
+        time.sleep(1)
+        
+        # Continue with back-and-forth rounds
+        for round_num in range(2, rounds + 1):
+            print(f"Round {round_num}: {char_a_name} continues the debate...")
+            
+            # Character A responds to Character B
+            recent_exchange = "\n".join(conversation_history[-2:])
+            
+            counter_prompt = f"""Continue this debate on: "{topic}"
+
+Recent exchange:
+{recent_exchange}
+
+Respond to {char_b_name}'s points. Build on the discussion, address their arguments, and advance your position. This is round {round_num} of {rounds}."""
+            
+            char_a_counter = self.ai_client_1.call_ai(counter_prompt, char_a_system)
+            conversation_history.append(f"ROUND {round_num} - {char_a_name}: {char_a_counter}")
+            
+            display(HTML(f"""
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 5px solid #2E86AB;">
+                <h4 style="color: #2E86AB; margin-top: 0;">Round {round_num} - {char_a_name}</h4>
+                <p style="font-style: italic; line-height: 1.6;">{char_a_counter}</p>
+            </div>
+            """))
+            
+            debate_transcript += f"ROUND {round_num} - {char_a_name}:\n{char_a_counter}\n\n"
+            time.sleep(1)
+            
+            if round_num < rounds:  # Don't let Character B respond after the final round
+                print(f"Round {round_num}: {char_b_name} counter-responds...")
+                
+                # Character B counter-responds
+                recent_exchange = "\n".join(conversation_history[-2:])
+                
+                counter_response_prompt = f"""Continue this debate on: "{topic}"
+
+Recent exchange:
+{recent_exchange}
+
+Respond to {char_a_name}'s latest points. This is round {round_num} of {rounds}."""
+                
+                char_b_counter = self.ai_client_2.call_ai(counter_response_prompt, char_b_system)
+                conversation_history.append(f"ROUND {round_num} - {char_b_name}: {char_b_counter}")
+                
+                display(HTML(f"""
+                <div style="background: #fce4ec; padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 5px solid #A23B72;">
+                    <h4 style="color: #A23B72; margin-top: 0;">Round {round_num} - {char_b_name}</h4>
+                    <p style="font-style: italic; line-height: 1.6;">{char_b_counter}</p>
+                </div>
+                """))
+                
+                debate_transcript += f"ROUND {round_num} - {char_b_name}:\n{char_b_counter}\n\n"
+                time.sleep(1)
+        
+        # Final summary from both characters
+        print("Creating closing statements...")
+        
+        full_debate = "\n".join(conversation_history)
+        
+        # Character A closing
+        closing_a_prompt = f"""This debate on "{topic}" is concluding. 
+
+Full debate so far:
+{full_debate}
+
+Give your final closing statement. Summarize your key points and perhaps acknowledge where you and {char_b_name} found common ground or remained in disagreement."""
+        
+        char_a_closing = self.ai_client_1.call_ai(closing_a_prompt, char_a_system)
+        
+        display(HTML(f"""
+        <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 5px solid #4CAF50;">
+            <h4 style="color: #4CAF50; margin-top: 0;">🏁 Closing Statement - {char_a_name}</h4>
+            <p style="font-style: italic; line-height: 1.6;">{char_a_closing}</p>
+        </div>
+        """))
+        
+        debate_transcript += f"CLOSING STATEMENT - {char_a_name}:\n{char_a_closing}\n\n"
+        
+        # Character B closing
+        closing_b_prompt = f"""This debate on "{topic}" is concluding.
+
+Full debate so far:
+{full_debate}
+
+{char_a_name} just gave their closing statement: "{char_a_closing}"
+
+Give your final closing statement. Summarize your key points and perhaps acknowledge where you and {char_a_name} found common ground or remained in disagreement."""
+        
+        char_b_closing = self.ai_client_2.call_ai(closing_b_prompt, char_b_system)
+        
+        display(HTML(f"""
+        <div style="background: #fff3e0; padding: 15px; border-radius: 10px; margin: 10px 0; border-left: 5px solid #FF9800;">
+            <h4 style="color: #FF9800; margin-top: 0;">🏁 Closing Statement - {char_b_name}</h4>
+            <p style="font-style: italic; line-height: 1.6;">{char_b_closing}</p>
+        </div>
+        """))
+        
+        debate_transcript += f"CLOSING STATEMENT - {char_b_name}:\n{char_b_closing}\n\n"
+        debate_transcript += "="*80 + "\n"
+        debate_transcript += "End of Historical Debate\n"
+        
+        return debate_transcript
+    
+    def save_transcript(self, button):
+        """Save the debate transcript"""
+        if not self.last_debate_transcript:
+            with self.status_output:
+                print("❌ No debate transcript to save!")
+            return
+        
+        try:
+            from google.colab import files
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            filename = f"historical_debate_{timestamp}.txt"
+            
+            with open(filename, 'w', encoding='utf-8') as f:
+                f.write(self.last_debate_transcript)
+            
+            with self.status_output:
+                print(f"💾 Downloading: {filename}")
+            
+            files.download(filename)
+            
+        except ImportError:
+            with self.status_output:
+                print(f"📄 Full Debate Transcript:")
+                print("="*80)
+                print(self.last_debate_transcript)
+        except Exception as e:
+            with self.status_output:
+                print(f"❌ Save failed: {str(e)}")
+
+
+# Initialize the complete historical debate engine
+print("🎭 Initializing Complete Historical Debate Engine...")
+complete_debate_engine = CompleteHistoricalDebateEngine()
+
+print("\n" + "="*70)
+print("🏛️ COMPLETE NIGHT AT THE MUSEUM: HISTORICAL DEBATES")
+print("="*70)
+
+complete_debate_engine.display_interface()
+
+print(f"""
+🎉 **Complete Historical Debate Engine Ready!**
+
+🎯 **All Historical Figures Available:**
+• **Scientists:** Newton, Einstein, Darwin, Curie, Galileo, Archimedes, Euclid, Copernicus, Mendel, Tesla, Pasteur, Franklin, Carson
+• **Philosophers:** Socrates, Aristotle, Plato, Voltaire, Kant, Locke, Mill, Lao Tzu, Epicurus
+• **Leaders:** Julius Caesar, Alexander, Elizabeth I, Lincoln, Benjamin Franklin  
+• **Women Pioneers:** Wollstonecraft, Stanton, Anning, Hypatia
+• **Artists/Writers:** Leonardo, Shakespeare, Michelangelo, Bach, Austen
+• **Cultural Figures:** Ibn Rushd, Zhu Xi, Christine de Pizan, Confucius, Rumi
+
+🎭 **Fresh Interface Features:**
+• Complete rebuild with all characters properly integrated
+• Dual AI system for authentic separate voices
+• Multiple debate topics across all domains
+• Adjustable rounds and tone settings
+• Full transcript saving capability
+
+Ready for any historical debate combination! 🌟
+""")
