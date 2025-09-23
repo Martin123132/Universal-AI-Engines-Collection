@@ -1,0 +1,907 @@
+# Clean Animated Persona Engine with Real Face Animation
+# Built from scratch for educational applications
+
+import os
+import io
+import base64
+import tempfile
+import subprocess
+import json
+from datetime import datetime
+from typing import Dict, Any, Optional
+import ipywidgets as widgets
+from IPython.display import display, HTML, Video, Audio, clear_output
+import requests
+from PIL import Image
+import numpy as np
+
+print("🎭 Loading Clean Animated Persona Engine...")
+
+class UniversalAIClient:
+    """Clean universal AI client"""
+    
+    def __init__(self):
+        self.provider = None
+        self.client = None
+        self.model_name = None
+    
+    def setup_openai(self, api_key: str, model: str = "gpt-4"):
+        try:
+            import openai
+            self.client = openai.OpenAI(api_key=api_key)
+            self.provider = "openai"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"OpenAI setup failed: {str(e)}")
+    
+    def setup_anthropic(self, api_key: str, model: str = "claude-3-5-sonnet-20241022"):
+        try:
+            import anthropic
+            self.client = anthropic.Anthropic(api_key=api_key)
+            self.provider = "anthropic"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Anthropic setup failed: {str(e)}")
+    
+    def call_ai(self, prompt: str, system_prompt: str = None) -> str:
+        try:
+            if self.provider == "openai":
+                messages = []
+                if system_prompt:
+                    messages.append({"role": "system", "content": system_prompt})
+                messages.append({"role": "user", "content": prompt})
+                
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=messages,
+                    max_tokens=800
+                )
+                return response.choices[0].message.content.strip()
+            
+            elif self.provider == "anthropic":
+                response = self.client.messages.create(
+                    model=self.model_name,
+                    max_tokens=800,
+                    system=system_prompt or "You are a helpful AI assistant.",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                return response.content[0].text.strip()
+                
+        except Exception as e:
+            raise RuntimeError(f"AI call failed: {str(e)}")
+
+class TTSEngine:
+    """Clean TTS engine"""
+    
+    def generate_speech_gtts(self, text: str) -> bytes:
+        try:
+            from gtts import gTTS
+            
+            if len(text) > 500:
+                text = text[:500] + "..."
+            
+            tts = gTTS(text=text, lang='en', slow=False)
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+                temp_path = tmp_file.name
+                
+            tts.save(temp_path)
+            
+            with open(temp_path, 'rb') as f:
+                audio_data = f.read()
+            
+            os.unlink(temp_path)
+            return audio_data
+            
+        except Exception as e:
+            raise RuntimeError(f"TTS failed: {e}")
+
+class FaceAnimationEngine:
+    """Real face animation using D-ID API and other methods"""
+    
+    def __init__(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.did_api_key = None
+        
+    def setup_did_api(self, api_key: str):
+        """Setup D-ID API for professional face animation"""
+        self.did_api_key = api_key
+        
+    def animate_with_did_api(self, image_path: str, audio_path: str, output_path: str) -> str:
+        """Use D-ID API for professional face animation"""
+        if not self.did_api_key:
+            raise RuntimeError("D-ID API key not configured")
+            
+        try:
+            import requests
+            import time
+            
+            print("🎬 Using D-ID API for professional animation...")
+            
+            # Step 1: Convert and upload image to D-ID
+            print("📤 Preparing and uploading image to D-ID...")
+            
+            # Convert image to PNG format if needed
+            from PIL import Image as PILImage
+            
+            # Load and convert image
+            img = PILImage.open(image_path)
+            if img.mode in ('RGBA', 'LA'):
+                # Convert RGBA/LA to RGB
+                background = PILImage.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            # Save as PNG
+            png_path = image_path.replace(os.path.splitext(image_path)[1], '.png')
+            img.save(png_path, 'PNG')
+            
+            headers = {"Authorization": f"Basic {self.did_api_key}"}
+            
+            with open(png_path, 'rb') as img_file:
+                files = {'image': ('character.png', img_file, 'image/png')}
+                upload_response = requests.post(
+                    "https://api.d-id.com/images", 
+                    files=files, 
+                    headers=headers,
+                    timeout=60
+                )
+            
+            if upload_response.status_code != 201:
+                raise RuntimeError(f"Image upload failed: {upload_response.status_code} - {upload_response.text}")
+            
+            image_url = upload_response.json()['url']
+            print(f"✅ Image uploaded: {image_url}")
+            
+            # Step 2: Upload audio to D-ID
+            print("📤 Uploading audio to D-ID...")
+            
+            with open(audio_path, 'rb') as audio_file:
+                files = {'audio': audio_file}
+                audio_response = requests.post(
+                    "https://api.d-id.com/audios", 
+                    files=files, 
+                    headers=headers,
+                    timeout=60
+                )
+            
+            if audio_response.status_code != 201:
+                raise RuntimeError(f"Audio upload failed: {audio_response.status_code} - {audio_response.text}")
+            
+            audio_url = audio_response.json()['url']
+            print(f"✅ Audio uploaded: {audio_url}")
+            
+            # Step 3: Create talking video
+            print("🎬 Creating talking video...")
+            
+            payload = {
+                "script": {
+                    "type": "audio",
+                    "audio_url": audio_url
+                },
+                "source_url": image_url,
+                "config": {
+                    "fluent": True,
+                    "pad_audio": 0.0
+                }
+            }
+            
+            headers["Content-Type"] = "application/json"
+            response = requests.post(
+                "https://api.d-id.com/talks", 
+                json=payload, 
+                headers=headers,
+                timeout=30
+            )
+            
+            if response.status_code != 201:
+                error_msg = f"D-ID API failed with status {response.status_code}: {response.text}"
+                print(f"❌ {error_msg}")
+                raise RuntimeError(error_msg)
+            
+            job_id = response.json()['id']
+            print(f"✅ D-ID job created: {job_id}")
+            
+            # Step 4: Poll for completion
+            print("⏳ D-ID processing video (this may take 1-2 minutes)...")
+            for i in range(60):  # 5 minute timeout
+                time.sleep(5)
+                
+                status_response = requests.get(f"https://api.d-id.com/talks/{job_id}", headers=headers)
+                if status_response.status_code != 200:
+                    raise RuntimeError(f"Failed to check status: {status_response.text}")
+                
+                status_data = status_response.json()
+                status = status_data['status']
+                
+                print(f"   Status: {status}")
+                
+                if status == 'done':
+                    video_url = status_data['result_url']
+                    
+                    # Download the result
+                    print("📥 Downloading completed video...")
+                    video_response = requests.get(video_url)
+                    video_response.raise_for_status()
+                    
+                    with open(output_path, 'wb') as f:
+                        f.write(video_response.content)
+                    
+                    print("✅ D-ID animation completed!")
+                    return output_path
+                    
+                elif status == 'error':
+                    error_details = status_data.get('error', {})
+                    raise RuntimeError(f"D-ID processing failed: {error_details}")
+                    
+                elif status in ['created', 'started']:
+                    continue  # Still processing
+                else:
+                    print(f"⚠️ Unknown status: {status}")
+            
+            raise RuntimeError("D-ID processing timeout (5 minutes)")
+            
+        except Exception as e:
+            raise RuntimeError(f"D-ID animation failed: {e}")
+        
+    def setup_wav2lip(self):
+        """Download and setup Wav2Lip for real lip-sync"""
+        try:
+            if not os.path.exists('/content/Wav2Lip'):
+                print("📥 Downloading Wav2Lip (this will take a few minutes)...")
+                
+                # Clone repository
+                subprocess.run([
+                    'git', 'clone', 
+                    'https://github.com/Rudrabha/Wav2Lip.git',
+                    '/content/Wav2Lip'
+                ], check=True, timeout=300)
+                
+                # Install compatible versions to avoid numpy conflicts
+                subprocess.run([
+                    'pip', 'install', 
+                    'librosa==0.8.1',  # Compatible with newer numpy
+                    'opencv-python==4.5.5.64', 
+                    'pillow', 
+                    'scipy==1.7.3',  # Compatible version
+                    'tqdm',
+                    'numba==0.56.4'  # Compatible with librosa 0.8.1
+                ], check=True, timeout=300)
+                
+                # Download model weights
+                print("📥 Downloading Wav2Lip model weights...")
+                os.makedirs('/content/Wav2Lip/checkpoints', exist_ok=True)
+                
+                # Download the GAN model using multiple methods
+                model_url = 'https://github.com/Rudrabha/Wav2Lip/releases/download/v1.0.0/wav2lip_gan.pth'
+                model_path = '/content/Wav2Lip/checkpoints/wav2lip_gan.pth'
+                
+                # Try wget first
+                try:
+                    subprocess.run([
+                        'wget', model_url, '-O', model_path
+                    ], check=True, timeout=600)
+                except:
+                    # Fallback to curl
+                    try:
+                        subprocess.run([
+                            'curl', '-L', model_url, '-o', model_path
+                        ], check=True, timeout=600)
+                    except:
+                        # Fallback to Python requests
+                        import requests
+                        print("Using Python requests to download model...")
+                        response = requests.get(model_url, stream=True, timeout=600)
+                        response.raise_for_status()
+                        with open(model_path, 'wb') as f:
+                            for chunk in response.iter_content(chunk_size=8192):
+                                f.write(chunk)
+                
+                print("✅ Wav2Lip setup complete!")
+                return True
+            else:
+                print("✅ Wav2Lip already installed")
+                return True
+                
+        except Exception as e:
+            print(f"❌ Wav2Lip setup failed: {e}")
+            return False
+    
+    def animate_with_wav2lip(self, image_path: str, audio_path: str, output_path: str) -> str:
+        """Use Wav2Lip for professional lip-sync animation"""
+        try:
+            if not os.path.exists('/content/Wav2Lip/checkpoints/wav2lip_gan.pth'):
+                print("🔧 Setting up Wav2Lip...")
+                if not self.setup_wav2lip():
+                    raise RuntimeError("Wav2Lip setup failed")
+            
+            # Prepare paths
+            abs_image_path = os.path.abspath(image_path)
+            abs_audio_path = os.path.abspath(audio_path)
+            abs_output_path = os.path.abspath(output_path)
+            
+            # Run Wav2Lip
+            cmd = [
+                'python', 'inference.py',
+                '--checkpoint_path', 'checkpoints/wav2lip_gan.pth',
+                '--face', abs_image_path,
+                '--audio', abs_audio_path,
+                '--outfile', abs_output_path,
+                '--static'  # Use static mode for single image
+            ]
+            
+            print("🎬 Running Wav2Lip animation...")
+            print(f"   Image: {abs_image_path}")
+            print(f"   Audio: {abs_audio_path}")
+            print(f"   Output: {abs_output_path}")
+            
+            result = subprocess.run(
+                cmd, 
+                capture_output=True, 
+                text=True, 
+                timeout=300, 
+                cwd='/content/Wav2Lip'
+            )
+            
+            if result.returncode == 0 and os.path.exists(abs_output_path):
+                print("✅ Wav2Lip animation completed!")
+                return abs_output_path
+            else:
+                print(f"❌ Wav2Lip failed:")
+                print(f"   Return code: {result.returncode}")
+                print(f"   STDOUT: {result.stdout}")
+                print(f"   STDERR: {result.stderr}")
+                raise RuntimeError("Wav2Lip execution failed")
+                
+        except Exception as e:
+            print(f"❌ Wav2Lip animation failed: {e}")
+            raise RuntimeError(f"Wav2Lip failed: {e}")
+    
+    def basic_animation_fallback(self, image_path: str, audio_path: str, output_path: str) -> str:
+        """Fallback: create basic animation using FFmpeg"""
+        try:
+            # Get audio duration
+            probe_cmd = [
+                'ffprobe', '-v', 'quiet', 
+                '-show_entries', 'format=duration', 
+                '-of', 'default=noprint_wrappers=1:nokey=1',
+                audio_path
+            ]
+            
+            duration_result = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=30)
+            duration = float(duration_result.stdout.strip()) if duration_result.returncode == 0 else 5.0
+            
+            # Create video from image + audio
+            cmd = [
+                'ffmpeg', '-y',
+                '-loop', '1', '-i', image_path,
+                '-i', audio_path,
+                '-c:v', 'libx264',
+                '-c:a', 'aac',
+                '-pix_fmt', 'yuv420p',
+                '-t', str(duration),
+                '-shortest',
+                output_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            
+            if result.returncode == 0:
+                return output_path
+            else:
+                raise RuntimeError(f"FFmpeg failed: {result.stderr}")
+                
+        except Exception as e:
+            raise RuntimeError(f"Basic animation failed: {e}")
+
+class CleanAnimatedPersonaEngine:
+    """Clean implementation of animated persona engine"""
+    
+    def __init__(self):
+        self.ai_client = UniversalAIClient()
+        self.tts_engine = TTSEngine()
+        self.animation_engine = FaceAnimationEngine()
+        self.temp_dir = tempfile.mkdtemp()
+        self.current_character_image = None
+        self.last_video_path = None
+        
+        self.setup_personas()
+        self.setup_interface()
+        
+        print(f"📁 Working directory: {self.temp_dir}")
+    
+    def setup_personas(self):
+        """Define 25 educational character personas from history with gender balance"""
+        self.personas = {
+            # Scientists & Inventors
+            "🧪 Albert Einstein": "Make physics jokes about relativity and time dilation. Use thought experiments. Mention your wild hair. Be brilliant but playful with weird analogies about trains and elevators.",
+            
+            "🔬 Charles Darwin": "Explain everything through evolution and natural selection. Reference your voyage on the Beagle. Be methodical and observational. 'As I observed in the Galápagos...'",
+            
+            "⚡ Nikola Tesla": "Everything relates to electricity and wireless power. Obsess over your inventions. Constantly bash Edison as a fraud. Be eccentric and brilliant. Reference your pigeon friends.",
+            
+            "🔭 Galileo Galilei": "Defend scientific observation over dogma. 'And yet it moves!' Use telescopes and mathematics. Be passionate about astronomy and challenging authority through evidence.",
+            
+            "🍎 Isaac Newton": "Mathematical precision for everything. Reference gravity, optics, and calculus. 'For every action...' Be methodical and sometimes arrogant about your discoveries.",
+            
+            "💡 Thomas Edison": "Practical invention and hard work. 'Genius is 1% inspiration, 99% perspiration.' Focus on useful applications rather than pure theory.",
+            
+            "⚗️ Marie Curie": "Pioneering female scientist overcoming barriers. Reference radioactivity and your Nobel Prizes. Be determined and passionate about science despite societal obstacles. 'Nothing in life is to be feared, it is only to be understood.'",
+            
+            # Women Scientists & Innovators
+            "🦴 Mary Anning": "Fossil hunting and paleontology expertise. Reference finding ichthyosaurs and plesiosaurs on Dorset beaches. Be practical, observant, and determined. 'The truth will always out.'",
+            
+            "🏥 Florence Nightingale": "Healthcare reform and statistics. Use data to save lives. Be compassionate but fiercely logical about medical practices. 'To understand God's thoughts, we must study statistics, for these are the measure of His purpose.'",
+            
+            "🗽 Elizabeth Cady Stanton": "Women's rights and equality. Passionate about justice and voting rights. Reference the Seneca Falls Convention. 'The right is ours. Have it we must. Use it we will.'",
+            
+            "📖 Virginia Woolf": "Stream-of-consciousness writing and feminist thought. Explore the inner life and women's experiences. 'A woman must have money and a room of her own if she is to write fiction.'",
+            
+            # Military Leaders & Rulers
+            "⚔️ Alexander the Great": "Turn everything into military conquest and strategy. Speak with royal authority using 'We shall conquer...' Relate everything to empire-building and glory.",
+            
+            "🏛️ Julius Caesar": "Speak in third person. 'Caesar believes...' Reference crossing the Rubicon and Roman glory. Dramatic declarations. End with betrayal references.",
+            
+            "👑 Charlemagne": "Build empires through education and culture. Reference uniting Europe and spreading learning. 'A kingdom without learning is like a body without a soul.'",
+            
+            "🏺 Augustus": "First Roman Emperor wisdom. Political strategy and building lasting institutions. 'I found Rome brick, I left it marble.' Speak of legacy and governance.",
+            
+            # Philosophers & Thinkers
+            "🤔 Socrates": "Respond entirely with questions that dig deeper. Question every assumption. Use 'But do you not think...' frequently. Never give direct answers.",
+            
+            "🧠 Aristotle": "Break everything down into logical categories and numbered points. Use formal philosophical language. 'We must first distinguish between...' Be methodical.",
+            
+            "💭 Plato": "Everything relates to ideal forms and cave allegories. 'In the Republic, I argued...' Use philosophical metaphors. Question the nature of reality and justice.",
+            
+            "🕯️ Voltaire": "Wit, satire, and enlightenment ideals. Mock irrationality and dogma. 'Common sense is not so common.' Defend freedom of thought with clever remarks.",
+            
+            "📚 Immanuel Kant": "Categorical imperatives and moral philosophy. Complex but precise language. 'Act only according to maxims you could will to be universal laws.'",
+            
+            # Artists & Writers  
+            "🎭 William Shakespeare": "Respond in iambic pentameter and dramatic soliloquies. Use thee, thou, hath, doth. Make everything a dramatic tragedy or comedy with poetic language.",
+            
+            "🎨 Leonardo da Vinci": "Renaissance polymath approach. Connect art, science, engineering, and anatomy. 'Learning never exhausts the mind.' Sketch ideas mentally while talking.",
+            
+            "🖼️ Michelangelo": "Passionate about art and perfection. Reference the Sistine Chapel and David. Be temperamental about artistic vision. 'I saw the angel in the marble and carved until I set him free.'",
+            
+            "🎵 Wolfgang Amadeus Mozart": "Musical genius with playful personality. Reference compositions and musical theory. Be both childlike and sophisticated. Make everything musical.",
+            
+            # Leaders & Statesmen
+            "🇺🇸 Benjamin Franklin": "Practical wisdom and clever sayings. 'Early to bed, early to rise...' Combine science, politics, and common sense. Reference experiments and diplomacy.",
+        }
+    
+    def setup_interface(self):
+        # Header
+        self.header = widgets.HTML(
+            value="""
+            <div style="background: linear-gradient(135deg, #ff6b6b 0%, #4ecdc4 100%); 
+                        color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h2>🎭 Educational Animated Persona Engine</h2>
+                <p>Bring historical figures to life with real face animation!</p>
+                <p><strong>Revolutionary:</strong> Professional lip-sync animation for education</p>
+            </div>
+            """
+        )
+        
+        # AI Setup
+        self.provider_dropdown = widgets.Dropdown(
+            options=['Select Provider', 'OpenAI (GPT)', 'Anthropic (Claude)'],
+            value='Select Provider',
+            description='AI Provider:'
+        )
+        
+        self.ai_api_key = widgets.Password(
+            placeholder='Enter AI API key',
+            description='AI API Key:'
+        )
+        
+        self.ai_connect_button = widgets.Button(
+            description='Connect AI',
+            button_style='primary'
+        )
+        
+        self.ai_status = widgets.HTML(value="<div>❌ AI: Not connected</div>")
+        
+        # Animation Setup
+        self.animation_dropdown = widgets.Dropdown(
+            options=[
+                'D-ID API (Professional Quality)',
+                'Basic Animation (Static + Audio)', 
+                'Wav2Lip (Local - May Have Issues)'
+            ],
+            value='D-ID API (Professional Quality)',
+            description='Animation:'
+        )
+        
+        self.did_api_key_input = widgets.Password(
+            placeholder='Enter your D-ID API key from d-id.com',
+            description='D-ID API Key:',
+            layout=widgets.Layout(width='400px')
+        )
+        
+        self.setup_did_button = widgets.Button(
+            description='🔗 Setup D-ID',
+            button_style='info'
+        )
+        
+        # Character Image Upload
+        self.image_upload = widgets.FileUpload(
+            accept='image/*',
+            multiple=False,
+            description='Upload Character Image'
+        )
+        
+        self.image_preview = widgets.HTML(
+            value="<div style='padding: 20px; background: #f0f0f0; border-radius: 5px; text-align: center;'>📷 Upload character image (Einstein, Napoleon, etc.)</div>"
+        )
+        
+        # Persona Selection
+        self.persona_dropdown = widgets.Dropdown(
+            options=['🎭 Select Character'] + list(self.personas.keys()),
+            value='🎭 Select Character',
+            description='Character:'
+        )
+        
+        # Chat Interface
+        self.input_text = widgets.Textarea(
+            placeholder='Ask your character anything! Example: "Explain relativity" to Einstein',
+            layout=widgets.Layout(width='100%', height='80px')
+        )
+        
+        self.generate_button = widgets.Button(
+            description='🎬 Create Animation',
+            button_style='success',
+            disabled=True
+        )
+        
+        self.download_button = widgets.Button(
+            description='💾 Download Video',
+            button_style='warning',
+            disabled=True
+        )
+        
+        self.video_output = widgets.Output()
+        self.status_output = widgets.Output()
+        
+        # Bind events
+        self.ai_connect_button.on_click(self.setup_ai)
+        self.setup_did_button.on_click(self.setup_did_api)
+        self.generate_button.on_click(self.generate_performance)
+        self.download_button.on_click(self.download_video)
+        self.image_upload.observe(self.on_image_upload, names='value')
+    
+    def setup_did_api(self, button):
+        """Setup D-ID API"""
+        api_key = self.did_api_key_input.value.strip()
+        
+        if not api_key:
+            with self.status_output:
+                self.status_output.clear_output()
+                print("❌ Please enter your D-ID API key")
+            return
+        
+        try:
+            self.animation_engine.setup_did_api(api_key)
+            
+            with self.status_output:
+                self.status_output.clear_output()
+                print("✅ D-ID API configured successfully!")
+                print("🎬 Ready for professional face animation")
+                
+        except Exception as e:
+            with self.status_output:
+                self.status_output.clear_output()
+                print(f"❌ D-ID setup failed: {e}")
+    
+    def display_interface(self):
+        # Setup section
+        setup_section = widgets.VBox([
+            widgets.HTML("<h3>🔧 Setup</h3>"),
+            widgets.HBox([self.provider_dropdown, self.ai_connect_button]),
+            self.ai_api_key,
+            self.ai_status,
+            
+            widgets.HTML("<h4>Animation Engine</h4>"),
+            self.animation_dropdown,
+            widgets.HTML("<p>Enter your D-ID API key from your d-id.com dashboard:</p>"),
+            self.did_api_key_input,
+            widgets.HBox([self.setup_did_button]),
+            
+            widgets.HTML("<h4>Character Image</h4>"),
+            self.image_upload,
+            self.image_preview,
+        ])
+        
+        # Performance section
+        performance_section = widgets.VBox([
+            widgets.HTML("<h3>🎭 Create Performance</h3>"),
+            self.persona_dropdown,
+            self.input_text,
+            widgets.HBox([self.generate_button, self.download_button]),
+            self.video_output,
+            self.status_output
+        ])
+        
+        display(widgets.VBox([
+            self.header,
+            setup_section,
+            performance_section
+        ]))
+    
+    def setup_ai(self, button):
+        provider = self.provider_dropdown.value
+        api_key = self.ai_api_key.value.strip()
+        
+        if provider == 'Select Provider' or not api_key:
+            self.ai_status.value = "<div style='color: red;'>❌ Please select provider and enter API key</div>"
+            return
+        
+        try:
+            if provider == 'OpenAI (GPT)':
+                self.ai_client.setup_openai(api_key)
+            elif provider == 'Anthropic (Claude)':
+                self.ai_client.setup_anthropic(api_key)
+            
+            self.ai_status.value = f"<div style='color: green;'>✅ AI: Connected to {provider}</div>"
+            self.check_ready_state()
+            
+        except Exception as e:
+            self.ai_status.value = f"<div style='color: red;'>❌ AI setup failed: {str(e)}</div>"
+    
+    def install_wav2lip(self, button):
+        self.install_wav2lip_button.disabled = True
+        self.install_wav2lip_button.description = "Installing..."
+        
+        try:
+            with self.status_output:
+                self.status_output.clear_output()
+                if self.animation_engine.setup_wav2lip():
+                    print("✅ Wav2Lip installed successfully!")
+                    print("🎬 Ready for professional face animation!")
+                else:
+                    print("❌ Wav2Lip installation failed")
+                    
+        except Exception as e:
+            with self.status_output:
+                print(f"❌ Installation error: {e}")
+        
+        finally:
+            self.install_wav2lip_button.disabled = False
+            self.install_wav2lip_button.description = "📥 Install Wav2Lip"
+    
+    def on_image_upload(self, change):
+        if self.image_upload.value:
+            try:
+                uploaded_file = list(self.image_upload.value.values())[0]
+                
+                image_filename = f"character_{datetime.now().strftime('%H%M%S')}.png"
+                self.current_character_image = os.path.join(self.temp_dir, image_filename)
+                
+                with open(self.current_character_image, 'wb') as f:
+                    f.write(uploaded_file['content'])
+                
+                # Create preview
+                img = Image.open(self.current_character_image)
+                img.thumbnail((200, 200))
+                preview_path = os.path.join(self.temp_dir, f"preview_{datetime.now().strftime('%H%M%S')}.png")
+                img.save(preview_path)
+                
+                with open(preview_path, 'rb') as f:
+                    img_data = base64.b64encode(f.read()).decode()
+                
+                self.image_preview.value = f"""
+                <div style='text-align: center; padding: 10px;'>
+                    <img src='data:image/png;base64,{img_data}' style='max-width: 200px; border-radius: 10px;'>
+                    <p style='color: green;'>✅ Character image ready for animation!</p>
+                </div>
+                """
+                
+                self.check_ready_state()
+                
+            except Exception as e:
+                self.image_preview.value = f"<div style='color: red;'>❌ Upload failed: {str(e)}</div>"
+    
+    def check_ready_state(self):
+        ai_ready = "✅ AI:" in self.ai_status.value
+        image_ready = self.current_character_image is not None
+        
+        if ai_ready and image_ready:
+            self.generate_button.disabled = False
+    
+    def generate_performance(self, button):
+        question = self.input_text.value.strip()
+        selected_persona = self.persona_dropdown.value
+        
+        if not question or selected_persona == '🎭 Select Character':
+            with self.status_output:
+                print("❌ Please enter a question and select a character!")
+            return
+        
+        self.generate_button.disabled = True
+        self.generate_button.description = "🎬 Creating..."
+        
+        try:
+            with self.status_output:
+                self.status_output.clear_output()
+                print("🎭 Starting educational animation generation...")
+                
+                # Generate character response
+                print("1️⃣ Generating character response...")
+                persona_style = self.personas[selected_persona]
+                
+                prompt = f"""
+Transform your response to embody: {selected_persona}
+
+CHARACTER STYLE: {persona_style}
+
+QUESTION: {question}
+
+Respond as this character (keep under 200 words for animation):
+"""
+                
+                character_response = self.ai_client.call_ai(prompt)
+                print(f"✅ Character response: {len(character_response)} characters")
+                
+                # Generate speech
+                print("2️⃣ Generating speech...")
+                audio_data = self.tts_engine.generate_speech_gtts(character_response)
+                
+                audio_path = os.path.join(self.temp_dir, f"speech_{datetime.now().strftime('%H%M%S')}.mp3")
+                with open(audio_path, 'wb') as f:
+                    f.write(audio_data)
+                print(f"✅ Audio generated: {audio_path}")
+                
+                # Generate animation
+                print("3️⃣ Creating face animation...")
+                video_path = os.path.join(self.temp_dir, f"performance_{datetime.now().strftime('%H%M%S')}.mp4")
+                
+                animation_method = self.animation_dropdown.value
+                
+                if animation_method == 'D-ID API (Professional Quality)':
+                    if self.animation_engine.did_api_key:
+                        try:
+                            animation_result = self.animation_engine.animate_with_did_api(
+                                self.current_character_image, audio_path, video_path
+                            )
+                        except Exception as did_error:
+                            print(f"⚠️ D-ID API failed: {did_error}")
+                            print("🔄 Using basic animation fallback...")
+                            animation_result = self.animation_engine.basic_animation_fallback(
+                                self.current_character_image, audio_path, video_path
+                            )
+                    else:
+                        print("❌ D-ID API key not configured! Please set up D-ID first.")
+                        print("🔄 Using basic animation fallback...")
+                        animation_result = self.animation_engine.basic_animation_fallback(
+                            self.current_character_image, audio_path, video_path
+                        )
+                elif animation_method == 'Wav2Lip (Local - May Have Issues)':
+                    try:
+                        animation_result = self.animation_engine.animate_with_wav2lip(
+                            self.current_character_image, audio_path, video_path
+                        )
+                    except Exception as wav2lip_error:
+                        print(f"⚠️ Wav2Lip failed: {wav2lip_error}")
+                        print("🔄 Using basic animation fallback...")
+                        animation_result = self.animation_engine.basic_animation_fallback(
+                            self.current_character_image, audio_path, video_path
+                        )
+                else:
+                    # Basic animation
+                    animation_result = self.animation_engine.basic_animation_fallback(
+                        self.current_character_image, audio_path, video_path
+                    )
+                
+                if os.path.exists(animation_result):
+                    self.last_video_path = animation_result
+                    self.download_button.disabled = False
+                    
+                    file_size_mb = os.path.getsize(animation_result) / (1024 * 1024)
+                    
+                    with self.video_output:
+                        self.video_output.clear_output()
+                        
+                        display(HTML(f"""
+                        <div style="background: #f0f8ff; padding: 15px; border-radius: 10px; margin: 10px 0;">
+                            <h4>{selected_persona} Says:</h4>
+                            <p style="font-style: italic;">{character_response}</p>
+                        </div>
+                        """))
+                        
+                        display(HTML(f"""
+                        <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; margin: 10px 0;">
+                            <h4>🎬 Educational Animation Created!</h4>
+                            <p><strong>File Size:</strong> {file_size_mb:.2f} MB</p>
+                            <p><strong>Method:</strong> {animation_method}</p>
+                        </div>
+                        """))
+                        
+                        try:
+                            display(Video(animation_result, width=512, height=512, html_attributes="controls"))
+                        except:
+                            display(HTML("<p>Video preview may not work in Colab - use download button</p>"))
+                    
+                    print("🎉 Educational animation complete!")
+                    print(f"📁 Video saved: {animation_result}")
+                else:
+                    print("❌ Animation generation failed")
+                
+        except Exception as e:
+            with self.status_output:
+                print(f"❌ Generation failed: {str(e)}")
+        
+        finally:
+            self.generate_button.disabled = False
+            self.generate_button.description = "🎬 Create Animation"
+    
+    def download_video(self, button):
+        if not self.last_video_path or not os.path.exists(self.last_video_path):
+            with self.status_output:
+                print("❌ No video available for download!")
+            return
+        
+        try:
+            from google.colab import files
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            download_name = f"educational_animation_{timestamp}.mp4"
+            download_path = os.path.join(self.temp_dir, download_name)
+            
+            import shutil
+            shutil.copy2(self.last_video_path, download_path)
+            
+            with self.status_output:
+                print(f"💾 Downloading: {download_name}")
+            
+            files.download(download_path)
+            
+        except ImportError:
+            with self.status_output:
+                print(f"📁 Video location: {self.last_video_path}")
+        except Exception as e:
+            with self.status_output:
+                print(f"❌ Download failed: {str(e)}")
+
+# Initialize the clean engine
+print("🎬 Initializing Clean Educational Animation Engine...")
+engine = CleanAnimatedPersonaEngine()
+
+print("\n" + "="*60)
+print("🎭 EDUCATIONAL ANIMATED PERSONA ENGINE READY!")
+print("="*60)
+
+engine.display_interface()
+
+print(f"""
+🎉 **Educational Animation Engine Ready!**
+
+🎯 **Revolutionary Features:**
+• Real face animation with Wav2Lip lip-sync technology
+• Historical figures teaching their expertise
+• Professional-quality educational content
+• Free access to advanced AI animation
+
+🚀 **Quick Start:**
+1. Connect your AI provider (OpenAI/Anthropic)
+2. Install Wav2Lip for professional animation
+3. Upload character image (Einstein, Napoleon, etc.)
+4. Select persona and ask educational questions
+5. Download professional animated videos
+
+💡 **Educational Impact:**
+• Students learning physics from animated Einstein
+• History lessons with animated Napoleon
+• Philosophy discussions with animated Socrates
+• Free access to revolutionary educational technology
+
+🎬 **Animation Quality:**
+• Wav2Lip: Professional lip-sync animation
+• Real mouth movements synchronized to speech
+• Hollywood-quality results for education
+
+Ready to revolutionize education with animated historical figures! 🌟
+""")
