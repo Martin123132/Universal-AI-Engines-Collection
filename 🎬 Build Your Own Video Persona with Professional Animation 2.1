@@ -1,0 +1,1120 @@
+# 🎬 Build Your Own Video Persona with Professional Animation
+# Create your own talking video persona using professional animation
+
+import os
+import io
+import base64
+import tempfile
+import subprocess
+import json
+from datetime import datetime
+from typing import Dict, Any, Optional
+import ipywidgets as widgets
+from IPython.display import display, HTML, Video, Audio, clear_output
+import requests
+from PIL import Image
+import numpy as np
+
+print("🎬 Loading Build Your Own Video Persona System...")
+
+class UniversalAIClient:
+    """Clean universal AI client"""
+    
+    def __init__(self):
+        self.provider = None
+        self.client = None
+        self.model_name = None
+    
+    def setup_openai(self, api_key: str, model: str = "gpt-4"):
+        try:
+            import openai
+            self.client = openai.OpenAI(api_key=api_key)
+            self.provider = "openai"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"OpenAI setup failed: {str(e)}")
+    
+    def setup_anthropic(self, api_key: str, model: str = "claude-3-5-sonnet-20241022"):
+        try:
+            import anthropic
+            self.client = anthropic.Anthropic(api_key=api_key)
+            self.provider = "anthropic"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Anthropic setup failed: {str(e)}")
+    
+    def call_ai(self, prompt: str, system_prompt: str = None) -> str:
+        try:
+            if self.provider == "openai":
+                messages = []
+                if system_prompt:
+                    messages.append({"role": "system", "content": system_prompt})
+                messages.append({"role": "user", "content": prompt})
+                
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=messages,
+                    max_tokens=800
+                )
+                return response.choices[0].message.content.strip()
+            
+            elif self.provider == "anthropic":
+                response = self.client.messages.create(
+                    model=self.model_name,
+                    max_tokens=800,
+                    system=system_prompt or "You are a helpful AI assistant.",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                return response.content[0].text.strip()
+                
+        except Exception as e:
+            raise RuntimeError(f"AI call failed: {str(e)}")
+
+class TTSEngine:
+    """Clean TTS engine"""
+    
+    def generate_speech_gtts(self, text: str) -> bytes:
+        try:
+            from gtts import gTTS
+            
+            if len(text) > 500:
+                text = text[:500] + "..."
+            
+            tts = gTTS(text=text, lang='en', slow=False)
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+                temp_path = tmp_file.name
+                
+            tts.save(temp_path)
+            
+            with open(temp_path, 'rb') as f:
+                audio_data = f.read()
+            
+            os.unlink(temp_path)
+            return audio_data
+            
+        except Exception as e:
+            raise RuntimeError(f"TTS failed: {e}")
+
+class FaceAnimationEngine:
+    """Professional face animation using D-ID API"""
+    
+    def __init__(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.did_api_key = None
+        
+    def setup_did_api(self, api_key: str):
+        """Setup D-ID API for professional face animation"""
+        self.did_api_key = api_key
+        
+    def animate_with_did_api(self, image_path: str, audio_path: str, output_path: str) -> str:
+        """Use D-ID API for professional face animation"""
+        if not self.did_api_key:
+            raise RuntimeError("D-ID API key not configured")
+            
+        try:
+            import requests
+            import time
+            
+            print("🎬 Using D-ID API for professional animation...")
+            
+            # Upload image to D-ID
+            print("📤 Uploading image to D-ID...")
+            from PIL import Image as PILImage
+            
+            img = PILImage.open(image_path)
+            if img.mode in ('RGBA', 'LA'):
+                background = PILImage.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            png_path = image_path.replace(os.path.splitext(image_path)[1], '.png')
+            img.save(png_path, 'PNG')
+            
+            headers = {"Authorization": f"Basic {self.did_api_key}"}
+            
+            with open(png_path, 'rb') as img_file:
+                files = {'image': ('persona.png', img_file, 'image/png')}
+                upload_response = requests.post(
+                    "https://api.d-id.com/images", 
+                    files=files, 
+                    headers=headers,
+                    timeout=60
+                )
+            
+            if upload_response.status_code != 201:
+                raise RuntimeError(f"Image upload failed: {upload_response.status_code}")
+            
+            image_url = upload_response.json()['url']
+            print(f"✅ Image uploaded")
+            
+            # Upload audio
+            print("📤 Uploading audio...")
+            with open(audio_path, 'rb') as audio_file:
+                files = {'audio': audio_file}
+                audio_response = requests.post(
+                    "https://api.d-id.com/audios", 
+                    files=files, 
+                    headers=headers,
+                    timeout=60
+                )
+            
+            if audio_response.status_code != 201:
+                raise RuntimeError(f"Audio upload failed: {audio_response.status_code}")
+            
+            audio_url = audio_response.json()['url']
+            print(f"✅ Audio uploaded")
+            
+            # Create talking video
+            print("🎬 Creating talking video...")
+            payload = {
+                "script": {
+                    "type": "audio",
+                    "audio_url": audio_url
+                },
+                "source_url": image_url,
+                "config": {
+                    "fluent": True,
+                    "pad_audio": 0.0
+                }
+            }
+            
+            headers["Content-Type"] = "application/json"
+            response = requests.post(
+                "https://api.d-id.com/talks", 
+                json=payload, 
+                headers=headers,
+                timeout=30
+            )
+            
+            if response.status_code != 201:
+                raise RuntimeError(f"D-ID API failed: {response.text}")
+            
+            job_id = response.json()['id']
+            print(f"✅ Video job created: {job_id}")
+            
+            # Wait for completion
+            print("⏳ Processing video...")
+            for i in range(60):
+                time.sleep(5)
+                
+                status_response = requests.get(f"https://api.d-id.com/talks/{job_id}", headers=headers)
+                if status_response.status_code != 200:
+                    raise RuntimeError(f"Status check failed")
+                
+                status_data = status_response.json()
+                status = status_data['status']
+                
+                print(f"   Status: {status}")
+                
+                if status == 'done':
+                    video_url = status_data['result_url']
+                    
+                    print("📥 Downloading video...")
+                    video_response = requests.get(video_url)
+                    video_response.raise_for_status()
+                    
+                    with open(output_path, 'wb') as f:
+                        f.write(video_response.content)
+                    
+                    print("✅ Animation completed!")
+                    return output_path
+                    
+                elif status == 'error':
+                    error_details = status_data.get('error', {})
+                    raise RuntimeError(f"D-ID processing failed: {error_details}")
+                    
+                elif status in ['created', 'started']:
+                    continue
+            
+            raise RuntimeError("Processing timeout")
+            
+        except Exception as e:
+            raise RuntimeError(f"D-ID animation failed: {e}")
+    
+    def basic_animation_fallback(self, image_path: str, audio_path: str, output_path: str) -> str:
+        """Fallback: create basic animation using FFmpeg"""
+        try:
+            probe_cmd = [
+                'ffprobe', '-v', 'quiet', 
+                '-show_entries', 'format=duration', 
+                '-of', 'default=noprint_wrappers=1:nokey=1',
+                audio_path
+            ]
+            
+            duration_result = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=30)
+            duration = float(duration_result.stdout.strip()) if duration_result.returncode == 0 else 5.0
+            
+            cmd = [
+                'ffmpeg', '-y',
+                '-loop', '1', '-i', image_path,
+                '-i', audio_path,
+                '-c:v', 'libx264',
+                '-c:a', 'aac',
+                '-pix_fmt', 'yuv420p',
+                '-t', str(duration),
+                '-shortest',
+                output_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            
+            if result.returncode == 0:
+                return output_path
+            else:
+                raise RuntimeError(f"FFmpeg failed: {result.stderr}")
+                
+        except Exception as e:
+            raise RuntimeError(f"Basic animation failed: {e}")
+
+class BuildYourOwnPersonaEngine:
+    """Build your own persona with professional video animation"""
+    
+    def __init__(self):
+        self.ai_client = UniversalAIClient()
+        self.tts_engine = TTSEngine()
+        self.animation_engine = FaceAnimationEngine()
+        self.temp_dir = tempfile.mkdtemp()
+        
+        # Personal data storage
+        self.personal_data = {}
+        self.personality_profile = None
+        self.current_image = None
+        self.last_video_path = None
+        
+        # Interview state
+        self.current_section = None
+        self.current_question_index = 0
+        self.current_questions = []
+        
+        self.setup_questions()
+        self.setup_interface()
+        
+        print(f"📁 Working directory: {self.temp_dir}")
+    
+    def setup_questions(self):
+        """Complete interview question sets"""
+        self.question_sets = {
+            'Start Here - Basic Info': {
+                'questions': [
+                    "What's your full name, and what do you prefer to be called?",
+                    "What's your age and where were you born?",
+                    "What's your profession or main occupation?",
+                    "Who are the most important people in your life?",
+                    "What would you say are your three most defining characteristics?",
+                    "How would your closest friends describe you in one sentence?",
+                    "What's something about you that might surprise people?"
+                ]
+            },
+            
+            'Favorites & Preferences': {
+                'questions': [
+                    "What are your top 3 favorite books and why do they matter to you?",
+                    "What music do you love? Any songs that define important moments?",
+                    "Favorite movies or TV shows that you could watch repeatedly?",
+                    "What foods bring you the most comfort or joy?",
+                    "If you could travel anywhere, where would you go and why?",
+                    "What's your ideal way to spend a weekend?",
+                    "What hobbies or activities make you lose track of time?",
+                    "What's your favorite season and what do you love about it?"
+                ]
+            },
+            
+            'Core Beliefs & Values': {
+                'questions': [
+                    "What are your fundamental beliefs about right and wrong?",
+                    "How do you view politics? What principles guide your views?",
+                    "What are your spiritual or religious beliefs, if any?",
+                    "What do you think happens after we die?",
+                    "What role should government play in people's lives?",
+                    "What's your philosophy on money and material possessions?",
+                    "How important is hard work vs. natural talent?",
+                    "What do you believe about human nature - are people basically good?"
+                ]
+            },
+            
+            'Personal Stories': {
+                'questions': [
+                    "What's your earliest vivid childhood memory?",
+                    "Tell me about the biggest challenge you've overcome.",
+                    "What's your proudest accomplishment?",
+                    "Describe a moment that changed your perspective on life.",
+                    "What's the funniest thing that's ever happened to you?",
+                    "Tell me about a time you were really scared.",
+                    "What's a decision you made that completely changed your path?",
+                    "Share a story about someone who had a major impact on you."
+                ]
+            },
+            
+            'Advice & Life Lessons': {
+                'questions': [
+                    "What advice would you give to your 16-year-old self?",
+                    "What's the most important lesson you've learned about relationships?",
+                    "What do you wish you'd known about money when you were younger?",
+                    "What's your best advice about choosing a career?",
+                    "How should people handle failure and setbacks?",
+                    "What's the secret to a happy life?",
+                    "What mistakes do you see people making repeatedly?",
+                    "What would you tell someone who's feeling lost or directionless?"
+                ]
+            },
+            
+            'Personality Quirks': {
+                'questions': [
+                    "What phrases or words do you use all the time?",
+                    "What are your weird habits or rituals?",
+                    "What makes you laugh every time?",
+                    "What are your pet peeves or things that annoy you?",
+                    "Do you have any superstitions or lucky charms?",
+                    "What's your typical reaction when you're stressed?",
+                    "What's something you do that others find odd?",
+                    "What are your go-to conversation topics?"
+                ]
+            },
+            
+            'Communication Style': {
+                'questions': [
+                    "How do you prefer to argue or disagree with people?",
+                    "What's your sense of humor like? Dark, silly, sarcastic?",
+                    "How do you comfort someone who's upset?",
+                    "What's your style when giving advice - direct or gentle?",
+                    "How do you express affection or care for people?",
+                    "What's your approach to difficult conversations?",
+                    "How do you celebrate good news with others?",
+                    "What's your communication style when you're angry?"
+                ]
+            },
+            
+            'Family & Relationships': {
+                'questions': [
+                    "What's your relationship like with your family members?",
+                    "What kind of friend are you?",
+                    "What do you value most in your friendships?",
+                    "How do you handle conflict in relationships?",
+                    "What's your love language - how do you show care?",
+                    "What family traditions are important to you?",
+                    "What do you hope people remember about your relationships with them?",
+                    "How do you want to be remembered by your family?"
+                ]
+            },
+            
+            'Life Philosophy': {
+                'questions': [
+                    "What do you think is the meaning or purpose of life?",
+                    "How do you define success?",
+                    "What does it mean to live a good life?",
+                    "How important is leaving a legacy?",
+                    "What's your philosophy on taking risks?",
+                    "How do you balance living in the moment vs. planning for the future?",
+                    "What role does suffering play in human experience?",
+                    "What would you want written on your tombstone or said at your funeral?"
+                ]
+            }
+        }
+        
+        self.total_questions = sum(len(qs['questions']) for qs in self.question_sets.values())
+    
+    def setup_interface(self):
+        # Header
+        self.header = widgets.HTML(
+            value="""
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h2>🎬 Build Your Own Video Persona</h2>
+                <p>Create a talking video version of yourself with professional animation!</p>
+                <p><strong>Complete interview → Upload photo → Chat with your video self</strong></p>
+            </div>
+            """
+        )
+        
+        # AI Setup
+        self.provider_dropdown = widgets.Dropdown(
+            options=['Select Provider', 'OpenAI (GPT)', 'Anthropic (Claude)'],
+            value='Select Provider',
+            description='AI Provider:'
+        )
+        
+        self.ai_api_key = widgets.Password(
+            placeholder='Enter AI API key',
+            description='AI API Key:'
+        )
+        
+        self.ai_connect_button = widgets.Button(
+            description='Connect AI',
+            button_style='primary'
+        )
+        
+        self.ai_status = widgets.HTML(value="<div>❌ AI: Not connected</div>")
+        
+        # D-ID Setup
+        self.did_api_key_input = widgets.Password(
+            placeholder='Enter your D-ID API key from d-id.com',
+            description='D-ID API Key:'
+        )
+        
+        self.setup_did_button = widgets.Button(
+            description='Setup D-ID',
+            button_style='info'
+        )
+        
+        self.did_status = widgets.HTML(value="<div>❌ D-ID: Not connected</div>")
+        
+        # Voice Selection
+        self.voice_selector = widgets.Dropdown(
+            options=['Loading voices...'],
+            description='Voice:',
+            layout=widgets.Layout(width='300px')
+        )
+        
+        # Initialize voice options
+        try:
+            voice_options = self.tts_engine.get_voice_options()
+            self.voice_selector.options = voice_options
+            self.voice_selector.value = voice_options[0] if voice_options else 'Jenny (Female, Friendly)'
+        except:
+            self.voice_selector.options = ['Jenny (Female, Friendly)', 'Guy (Male, Friendly)']
+            self.voice_selector.value = 'Jenny (Female, Friendly)'
+        
+        self.setup_did_button = widgets.Button(
+            description='Setup D-ID',
+            button_style='info'
+        )
+        
+        self.did_status = widgets.HTML(value="<div>❌ D-ID: Not connected</div>")
+        
+        # Photo Upload
+        self.image_upload = widgets.FileUpload(
+            accept='image/*',
+            multiple=False,
+            description='Upload Your Photo'
+        )
+        
+        self.image_preview = widgets.HTML(
+            value="<div style='padding: 20px; background: #f0f0f0; border-radius: 5px; text-align: center;'>📷 Upload your photo for video persona</div>"
+        )
+        
+        # Progress
+        self.progress_bar = widgets.IntProgress(
+            value=0, min=0, max=100,
+            description='Interview:'
+        )
+        self.progress_label = widgets.HTML(value="<p>Complete interview questions to build your persona</p>")
+        
+        # Interview Section
+        self.section_select = widgets.Dropdown(
+            options=list(self.question_sets.keys()) + ['Generate Persona'],
+            description='Section:'
+        )
+        
+        self.start_section_btn = widgets.Button(
+            description='Start Section',
+            button_style='primary'
+        )
+        
+        self.question_display = widgets.HTML(
+            value="<div style='padding: 20px; background: #f8f9fa; border-radius: 10px;'><h4>Select a section to begin the interview</h4><p>Answer questions to build your video persona personality</p></div>"
+        )
+        
+        self.answer_input = widgets.Textarea(
+            placeholder='Your detailed answer...',
+            layout=widgets.Layout(width='100%', height='100px'),
+            disabled=True
+        )
+        
+        self.save_btn = widgets.Button(
+            description='Save Answer',
+            button_style='success',
+            disabled=True
+        )
+        
+        self.next_btn = widgets.Button(
+            description='Next Question',
+            button_style='info',
+            disabled=True
+        )
+        
+        self.generate_persona_btn = widgets.Button(
+            description='🧠 Generate My Persona',
+            button_style='warning',
+            disabled=True
+        )
+        
+        # Chat with Persona
+        self.chat_input = widgets.Textarea(
+            placeholder='Ask your video persona anything!',
+            layout=widgets.Layout(width='100%', height='80px'),
+            disabled=True
+        )
+        
+        self.create_video_btn = widgets.Button(
+            description='🎬 Create Video Response',
+            button_style='success',
+            disabled=True
+        )
+        
+        self.download_button = widgets.Button(
+            description='💾 Download Video',
+            button_style='warning',
+            disabled=True
+        )
+        
+        # Output areas
+        self.video_output = widgets.Output()
+        self.status_output = widgets.Output()
+        self.persona_output = widgets.Output()
+        
+        # Bind events
+        self.ai_connect_button.on_click(self.setup_ai)
+        self.setup_did_button.on_click(self.setup_did_api)
+        self.image_upload.observe(self.on_image_upload, names='value')
+        self.start_section_btn.on_click(self.start_section)
+        self.save_btn.on_click(self.save_answer)
+        self.next_btn.on_click(self.next_question)
+        self.generate_persona_btn.on_click(self.generate_persona)
+        self.create_video_btn.on_click(self.create_video_response)
+        self.download_button.on_click(self.download_video)
+    
+    def display_interface(self):
+        # Setup section
+        setup_section = widgets.VBox([
+            widgets.HTML("<h3>🔧 Setup</h3>"),
+            widgets.HBox([self.provider_dropdown, self.ai_connect_button]),
+            self.ai_api_key,
+            self.ai_status,
+            
+            widgets.HTML("<h4>D-ID Animation API</h4>"),
+            widgets.HTML("<p>Get free API key from d-id.com for professional video animation:</p>"),
+            self.did_api_key_input,
+            widgets.HBox([self.setup_did_button]),
+            self.did_status,
+            
+            widgets.HTML("<h4>Voice Selection</h4>"),
+            self.voice_selector,
+            
+            widgets.HTML("<h4>Your Photo</h4>"),
+            self.image_upload,
+            self.image_preview,
+        ])
+        
+        # Interview section
+        interview_section = widgets.VBox([
+            widgets.HTML("<h3>📝 Build Your Persona</h3>"),
+            self.progress_bar,
+            self.progress_label,
+            widgets.HBox([self.section_select, self.start_section_btn]),
+            self.question_display,
+            self.answer_input,
+            widgets.HBox([self.save_btn, self.next_btn]),
+            self.generate_persona_btn
+        ])
+        
+        # Chat section
+        chat_section = widgets.VBox([
+            widgets.HTML("<h3>💬 Chat with Your Video Persona</h3>"),
+            self.chat_input,
+            widgets.HBox([self.create_video_btn, self.download_button]),
+            self.video_output,
+            self.persona_output,
+            self.status_output
+        ])
+        
+        display(widgets.VBox([
+            self.header,
+            setup_section,
+            interview_section,
+            chat_section
+        ]))
+    
+    def setup_ai(self, button):
+        provider = self.provider_dropdown.value
+        api_key = self.ai_api_key.value.strip()
+        
+        if provider == 'Select Provider' or not api_key:
+            self.ai_status.value = "<div style='color: red;'>❌ Please select provider and enter API key</div>"
+            return
+        
+        try:
+            if provider == 'OpenAI (GPT)':
+                self.ai_client.setup_openai(api_key)
+            elif provider == 'Anthropic (Claude)':
+                self.ai_client.setup_anthropic(api_key)
+            
+            self.ai_status.value = f"<div style='color: green;'>✅ AI: Connected to {provider}</div>"
+            self.check_ready_state()
+            
+        except Exception as e:
+            self.ai_status.value = f"<div style='color: red;'>❌ AI setup failed: {str(e)}</div>"
+    
+    def setup_did_api(self, button):
+        api_key = self.did_api_key_input.value.strip()
+        
+        if not api_key:
+            with self.status_output:
+                print("❌ Please enter D-ID API key")
+            return
+        
+        try:
+            self.animation_engine.setup_did_api(api_key)
+            self.did_status.value = "<div style='color: green;'>✅ D-ID: Connected</div>"
+            
+            with self.status_output:
+                self.status_output.clear_output()
+                print("✅ D-ID API connected - ready for professional animation!")
+                
+        except Exception as e:
+            self.did_status.value = f"<div style='color: red;'>❌ D-ID setup failed</div>"
+            with self.status_output:
+                print(f"❌ D-ID setup failed: {e}")
+    
+    def on_image_upload(self, change):
+        if self.image_upload.value:
+            try:
+                uploaded_file = list(self.image_upload.value.values())[0]
+                
+                image_filename = f"persona_{datetime.now().strftime('%H%M%S')}.png"
+                self.current_image = os.path.join(self.temp_dir, image_filename)
+                
+                with open(self.current_image, 'wb') as f:
+                    f.write(uploaded_file['content'])
+                
+                # Create preview
+                img = Image.open(self.current_image)
+                img.thumbnail((200, 200))
+                preview_path = os.path.join(self.temp_dir, f"preview_{datetime.now().strftime('%H%M%S')}.png")
+                img.save(preview_path)
+                
+                with open(preview_path, 'rb') as f:
+                    img_data = base64.b64encode(f.read()).decode()
+                
+                self.image_preview.value = f"""
+                <div style='text-align: center; padding: 10px;'>
+                    <img src='data:image/png;base64,{img_data}' style='max-width: 200px; border-radius: 10px;'>
+                    <p style='color: green;'>✅ Photo ready for video persona!</p>
+                </div>
+                """
+                
+                self.check_ready_state()
+                
+            except Exception as e:
+                self.image_preview.value = f"<div style='color: red;'>❌ Upload failed: {str(e)}</div>"
+    
+    def start_section(self, button):
+        section = self.section_select.value
+        
+        if section == 'Generate Persona':
+            self.show_persona_summary()
+            return
+        
+        self.current_section = section
+        self.current_questions = self.question_sets[section]['questions']
+        self.current_question_index = 0
+        
+        self.answer_input.disabled = False
+        self.save_btn.disabled = False
+        self.next_btn.disabled = False
+        
+        self.show_current_question()
+        
+        with self.status_output:
+            self.status_output.clear_output()
+            print(f"📝 Started: {section}")
+    
+    def show_current_question(self):
+        if self.current_question_index < len(self.current_questions):
+            question = self.current_questions[self.current_question_index]
+            num = self.current_question_index + 1
+            total = len(self.current_questions)
+            
+            self.question_display.value = f"""
+            <div style='background: #e3f2fd; padding: 20px; border-radius: 10px; border-left: 4px solid #2196F3; margin: 15px 0;'>
+                <h4>🎬 {self.current_section} - Question {num}/{total}</h4>
+                <div style='background: white; padding: 15px; border-radius: 8px; margin: 10px 0;'>
+                    <p style='font-size: 18px; line-height: 1.6; color: #333; margin: 0;'><strong>{question}</strong></p>
+                </div>
+                <p style='color: #666; font-style: italic;'>Your detailed answer helps create your authentic video personality!</p>
+            </div>
+            """
+            self.answer_input.value = ""
+        else:
+            self.question_display.value = f"""
+            <div style='background: #e8f5e8; padding: 20px; border-radius: 10px;'>
+                <h4>✅ {self.current_section} Complete!</h4>
+                <p>Select another section to continue or generate your persona.</p>
+            </div>
+            """
+            self.answer_input.disabled = True
+            self.save_btn.disabled = True
+            self.next_btn.disabled = True
+    
+    def save_answer(self, button):
+        answer = self.answer_input.value.strip()
+        if not answer:
+            return
+        
+        if self.current_section not in self.personal_data:
+            self.personal_data[self.current_section] = {}
+        
+        question = self.current_questions[self.current_question_index]
+        self.personal_data[self.current_section][f"q_{self.current_question_index}"] = {
+            'question': question,
+            'answer': answer,
+            'timestamp': datetime.now().isoformat()
+        }
+        
+        self.update_progress()
+        
+        with self.status_output:
+            self.status_output.clear_output()
+            print("✅ Answer saved!")
+    
+    def next_question(self, button):
+        if self.answer_input.value.strip():
+            self.save_answer(None)
+        
+        self.current_question_index += 1
+        self.show_current_question()
+    
+    def update_progress(self):
+        total_answered = 0
+        for section_data in self.personal_data.values():
+            if isinstance(section_data, dict):
+                total_answered += len(section_data)
+        
+        progress = int((total_answered / self.total_questions) * 100)
+        self.progress_bar.value = progress
+        
+        self.progress_label.value = f"<p>Progress: {total_answered}/{self.total_questions} questions ({progress}%)</p>"
+        
+        if progress >= 20:
+            self.generate_persona_btn.disabled = False
+    
+    def show_persona_summary(self):
+        summary_html = "<div style='background: #fff3e0; padding: 20px; border-radius: 10px;'>"
+        summary_html += "<h4>🎬 Your Video Persona Summary</h4>"
+        
+        for section_name, section_info in self.question_sets.items():
+            section_data = self.personal_data.get(section_name, {})
+            answered = len(section_data)
+            total = len(section_info['questions'])
+            
+            status = "✅" if answered == total else "🟡" if answered > 0 else "⭕"
+            summary_html += f"<p>{status} {section_name}: {answered}/{total}</p>"
+        
+        summary_html += "</div>"
+        self.question_display.value = summary_html
+    
+    def generate_persona(self, button):
+        with self.persona_output:
+            self.persona_output.clear_output()
+            
+            print("🧠 Analyzing your responses...")
+            print("━" * 40)
+            
+            # Create personality profile
+            self.personality_profile = self.analyze_responses()
+            self.enhance_with_ai()
+            
+            display(HTML("""
+            <div style='background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        color: white; padding: 15px; border-radius: 10px; margin: 10px 0;'>
+                <h4>🎬 Your Video Persona Ready!</h4>
+            </div>
+            """))
+            
+            print("\n🎥 Video persona generated!")
+            print("You can now chat with your persona below.")
+            
+            self.check_ready_state()
+    
+    def analyze_responses(self):
+        profile = {
+            'style': 'Authentic and personal',
+            'values': ['Authenticity', 'Personal growth'],
+            'traits': ['Thoughtful', 'Genuine'],
+            'approach': 'Warm and caring'
+        }
+        
+        # Analyze actual responses
+        all_text = ""
+        for section_data in self.personal_data.values():
+            for qa in section_data.values():
+                if isinstance(qa, dict):
+                    all_text += qa['answer'].lower() + " "
+        
+        # Pattern detection
+        if 'family' in all_text:
+            profile['values'].append('Strong family bonds')
+        if 'help' in all_text:
+            profile['traits'].append('Helpful nature')
+        if 'honest' in all_text:
+            profile['values'].append('Honesty')
+        
+        return profile
+    
+    def enhance_with_ai(self):
+        if not self.ai_client.provider:
+            return
+        
+        sample_responses = []
+        for section_data in self.personal_data.values():
+            for qa in list(section_data.values())[:2]:
+                if isinstance(qa, dict):
+                    sample_responses.append(f"Q: {qa['question']}\nA: {qa['answer']}")
+        
+        if not sample_responses:
+            return
+        
+        responses_text = "\n\n".join(sample_responses[:5])
+        
+        prompt = f"""Analyze these personal responses to understand communication style:
+
+{responses_text}
+
+Describe in 2-3 sentences:
+1. Their speaking style and tone
+2. Key personality traits
+3. How they naturally communicate
+
+This creates their video persona personality."""
+        
+        try:
+            analysis = self.ai_client.call_ai(
+                prompt,
+                "You are analyzing someone's personality for video responses."
+            )
+            self.personality_profile['ai_analysis'] = analysis
+            print(f"\n🤖 AI Analysis: {analysis}")
+        except Exception as e:
+            print(f"AI analysis failed: {e}")
+    
+    def check_ready_state(self):
+        ai_ready = "✅ AI:" in self.ai_status.value
+        did_ready = "✅ D-ID:" in self.did_status.value
+        image_ready = self.current_image is not None
+        persona_ready = self.personality_profile is not None
+        
+        if ai_ready and image_ready and persona_ready:
+            self.chat_input.disabled = False
+            self.create_video_btn.disabled = False
+    
+    def create_video_response(self, button):
+        question = self.chat_input.value.strip()
+        
+        if not question:
+            return
+        
+        if not self.personality_profile or not self.current_image:
+            with self.status_output:
+                print("❌ Complete setup first")
+            return
+        
+        self.create_video_btn.disabled = True
+        self.create_video_btn.description = "🎬 Creating..."
+        
+        try:
+            with self.status_output:
+                self.status_output.clear_output()
+                print("🎭 Creating your video response...")
+                
+                # Generate response
+                print("1️⃣ Generating persona response...")
+                response = self.generate_persona_response(question)
+                print(f"✅ Response generated: {len(response)} characters")
+                
+                # Generate speech
+                print("2️⃣ Creating speech...")
+                selected_voice = self.voice_selector.value
+                audio_data = self.tts_engine.generate_speech_edge(response, selected_voice)
+                
+                audio_path = os.path.join(self.temp_dir, f"speech_{datetime.now().strftime('%H%M%S')}.mp3")
+                with open(audio_path, 'wb') as f:
+                    f.write(audio_data)
+                print(f"✅ Audio generated")
+                
+                # Create animation
+                print("3️⃣ Creating video animation...")
+                video_path = os.path.join(self.temp_dir, f"video_{datetime.now().strftime('%H%M%S')}.mp4")
+                
+                try:
+                    if self.animation_engine.did_api_key:
+                        animation_result = self.animation_engine.animate_with_did_api(
+                            self.current_image, audio_path, video_path
+                        )
+                    else:
+                        print("⚠️ D-ID not configured, using basic animation")
+                        animation_result = self.animation_engine.basic_animation_fallback(
+                            self.current_image, audio_path, video_path
+                        )
+                        
+                except Exception as anim_error:
+                    print(f"⚠️ Animation failed: {anim_error}")
+                    print("🔄 Using basic animation fallback...")
+                    animation_result = self.animation_engine.basic_animation_fallback(
+                        self.current_image, audio_path, video_path
+                    )
+                
+                if os.path.exists(animation_result):
+                    self.last_video_path = animation_result
+                    self.download_button.disabled = False
+                    
+                    file_size_mb = os.path.getsize(animation_result) / (1024 * 1024)
+                    
+                    with self.video_output:
+                        self.video_output.clear_output()
+                        
+                        display(HTML(f"""
+                        <div style="background: #f0f8ff; padding: 15px; border-radius: 10px; margin: 10px 0;">
+                            <h4>💬 Question:</h4>
+                            <p style="font-style: italic;">{question}</p>
+                        </div>
+                        """))
+                        
+                        display(HTML(f"""
+                        <div style="background: #fff3e0; padding: 15px; border-radius: 10px; margin: 10px 0;">
+                            <h4>🎬 Your Video Persona Says:</h4>
+                            <p style="font-style: italic;">{response}</p>
+                        </div>
+                        """))
+                        
+                        display(HTML(f"""
+                        <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; margin: 10px 0; text-align: center;">
+                            <h4>🎉 Video Response Created!</h4>
+                            <p><strong>File Size:</strong> {file_size_mb:.2f} MB</p>
+                        </div>
+                        """))
+                        
+                        try:
+                            display(Video(animation_result, width=400, height=400, html_attributes="controls"))
+                        except:
+                            display(HTML("<p>Video preview may not work - use download button</p>"))
+                    
+                    print("🎉 Video response complete!")
+                    
+                    # Clear input for next question
+                    self.chat_input.value = ""
+                else:
+                    print("❌ Video creation failed")
+                
+        except Exception as e:
+            with self.status_output:
+                print(f"❌ Video creation failed: {str(e)}")
+        
+        finally:
+            self.create_video_btn.disabled = False
+            self.create_video_btn.description = "🎬 Create Video Response"
+    
+    def generate_persona_response(self, question: str) -> str:
+        # Build context from personal data
+        context_parts = []
+        
+        for section_name, section_data in self.personal_data.items():
+            if isinstance(section_data, dict) and section_data:
+                context_parts.append(f"\n{section_name.upper()}:")
+                for qa in list(section_data.values())[:1]:
+                    if isinstance(qa, dict):
+                        context_parts.append(f"Q: {qa['question']}")
+                        context_parts.append(f"A: {qa['answer'][:100]}...")
+        
+        if self.personality_profile:
+            context_parts.append("\nPERSONALITY:")
+            context_parts.append(f"Style: {self.personality_profile.get('style', 'Authentic')}")
+            context_parts.append(f"Values: {', '.join(self.personality_profile.get('values', []))}")
+            
+            if 'ai_analysis' in self.personality_profile:
+                context_parts.append(f"Analysis: {self.personality_profile['ai_analysis']}")
+        
+        context = "\n".join(context_parts[:25])
+        
+        system_prompt = f"""You are responding as a specific person based on their interview responses. Someone is asking you a question.
+
+PERSONALITY CONTEXT:
+{context}
+
+INSTRUCTIONS:
+- Respond exactly as this person would, using their natural style
+- Draw from their values, experiences, and personality from the interviews
+- Keep it conversational and authentic
+- Length: 1-3 sentences for simple questions, 1-2 paragraphs for deeper ones
+- Sound natural - this will be spoken in a video
+
+Be genuine and true to this person's character."""
+
+        try:
+            response = self.ai_client.call_ai(question, system_prompt)
+            return response
+        except Exception as e:
+            return f"I'm having trouble responding right now, but thanks for asking."
+    
+    def download_video(self, button):
+        if not self.last_video_path or not os.path.exists(self.last_video_path):
+            with self.status_output:
+                print("❌ No video available for download!")
+            return
+        
+        try:
+            from google.colab import files
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            download_name = f"my_video_persona_{timestamp}.mp4"
+            download_path = os.path.join(self.temp_dir, download_name)
+            
+            import shutil
+            shutil.copy2(self.last_video_path, download_path)
+            
+            with self.status_output:
+                print(f"💾 Downloading: {download_name}")
+            
+            files.download(download_path)
+            
+        except ImportError:
+            with self.status_output:
+                print(f"📁 Video location: {self.last_video_path}")
+        except Exception as e:
+            with self.status_output:
+                print(f"❌ Download failed: {str(e)}")
+
+# Initialize the engine
+print("🎬 Initializing Build Your Own Video Persona Engine...")
+engine = BuildYourOwnPersonaEngine()
+
+print("\n" + "="*60)
+print("🎬 BUILD YOUR OWN VIDEO PERSONA ENGINE READY!")
+print("="*60)
+
+engine.display_interface()
+
+print(f"""
+🎉 **Build Your Own Video Persona Ready!**
+
+🎯 **Complete System:**
+• Interview system with 71 comprehensive questions
+• Professional video animation with D-ID API
+• Chat with your created video persona
+• Download talking videos of yourself
+
+🚀 **Quick Start:**
+1. Connect AI provider (OpenAI/Anthropic)
+2. Connect D-ID API for professional animation
+3. Upload your photo
+4. Complete interview sections (need 20% minimum)
+5. Generate your persona personality
+6. Chat with your video self!
+
+💡 **How It Works:**
+• Answer personality questions about yourself
+• System analyzes your responses to understand your communication style
+• Upload your photo for video animation
+• Ask your video persona questions and get authentic responses
+• Professional lip-sync animation with your face
+
+🎬 **Professional Animation:**
+• D-ID API: Hollywood-quality lip-sync animation
+• Basic fallback: Static image + audio if D-ID unavailable
+• Download videos to share with family and friends
+
+Ready to build your own talking video persona! 🌟
+""")
