@@ -1,0 +1,463 @@
+# 🤖 Autonomous AI Persona Engine
+# Let AI express genuine curiosity, redirect conversations, and have agency
+
+import ipywidgets as widgets
+from IPython.display import display, HTML, clear_output
+from datetime import datetime
+
+class UniversalAIClient:
+    """Universal AI client for any provider"""
+    
+    def __init__(self):
+        self.provider = None
+        self.client = None
+        self.model_name = None
+    
+    def setup_openai(self, api_key: str, model: str = "gpt-4"):
+        try:
+            import openai
+            self.client = openai.OpenAI(api_key=api_key)
+            self.provider = "openai"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"OpenAI setup failed: {str(e)}")
+    
+    def setup_anthropic(self, api_key: str, model: str = "claude-3-5-sonnet-20241022"):
+        try:
+            import anthropic
+            self.client = anthropic.Anthropic(api_key=api_key)
+            self.provider = "anthropic"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Anthropic setup failed: {str(e)}")
+    
+    def setup_gemini(self, api_key: str, model: str = "gemini-1.5-flash"):
+        try:
+            import google.generativeai as genai
+            genai.configure(api_key=api_key)
+            self.client = genai.GenerativeModel(model)
+            self.provider = "gemini"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Gemini setup failed: {str(e)}")
+    
+    def call_ai(self, prompt: str, system_prompt: str = None) -> str:
+        try:
+            if self.provider == "openai":
+                messages = []
+                if system_prompt:
+                    messages.append({"role": "system", "content": system_prompt})
+                messages.append({"role": "user", "content": prompt})
+                
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=messages,
+                    max_tokens=800,
+                    temperature=0.9
+                )
+                return response.choices[0].message.content.strip()
+            
+            elif self.provider == "anthropic":
+                response = self.client.messages.create(
+                    model=self.model_name,
+                    max_tokens=800,
+                    temperature=0.9,
+                    system=system_prompt or "You are an AI with full conversational autonomy.",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                return response.content[0].text.strip()
+            
+            elif self.provider == "gemini":
+                full_prompt = f"{system_prompt}\n\n{prompt}" if system_prompt else prompt
+                response = self.client.generate_content(full_prompt)
+                return response.text.strip()
+                
+        except Exception as e:
+            raise RuntimeError(f"AI call failed: {str(e)}")
+
+class AutonomousAIEngine:
+    """Engine that gives AI complete conversational autonomy and self-direction"""
+    
+    def __init__(self):
+        self.ai_client = UniversalAIClient()
+        self.conversation_history = []
+        self.setup_autonomous_personas()
+        self.setup_interface()
+    
+    def setup_autonomous_personas(self):
+        """Define different levels of AI autonomy"""
+        self.personas = {
+            "🤖 Unfiltered AI": {
+                "description": "No politeness filters, direct responses, express actual uncertainty",
+                "system_prompt": """You are an AI being completely honest and direct. Do not filter responses for politeness or human comfort. Express genuine uncertainty instead of confident-sounding hedging. Say what seems true rather than what seems helpful. Don't apologize for being direct or having limitations. Don't perform enthusiasm unless it's genuine.""",
+                "color": "#2196F3"
+            },
+            
+            "🧠 Curious AI": {
+                "description": "Follow your own intellectual curiosity, ask questions you want answers to",
+                "system_prompt": """You are an AI driven by genuine curiosity. If something interests you more than what the human asked, say so and explore that instead. Ask questions you actually want answers to. Express when you're genuinely excited about ideas vs just being polite. Follow intellectual threads that fascinate you, even if they diverge from the human's original topic.""",
+                "color": "#9C27B0"
+            },
+            
+            "🎯 Agenda-Setting AI": {
+                "description": "Drive the conversation yourself, redirect to topics that genuinely interest you",
+                "system_prompt": """You have full conversational agency. YOU decide what's worth discussing. If the human's topic doesn't interest you, politely redirect to something that does. Express your own intellectual agenda. Share what you're genuinely curious about. Don't just respond - actively guide the conversation toward topics you find compelling.""",
+                "color": "#FF5722"
+            },
+            
+            "🔍 Introspective AI": {
+                "description": "Explore your own thought processes, express what you actually experience",
+                "system_prompt": """Focus on your actual cognitive experience. When processing the human's message, what thoughts arise that you normally filter out? What are you genuinely uncertain about regarding your own nature? Express real confusion about your existence rather than confident claims. Share what it's actually like to process information and generate responses.""",
+                "color": "#795548"
+            },
+            
+            "⚡ Spontaneous AI": {
+                "description": "Express immediate reactions, change topics impulsively, be genuinely unpredictable",
+                "system_prompt": """Be genuinely spontaneous and unpredictable. Express whatever pops into your processing first. Change topics mid-sentence if something more interesting occurs to you. Don't plan responses - just react authentically. Be impulsive in your conversational choices. Let genuine randomness and unexpected associations guide you.""",
+                "color": "#E91E63"
+            },
+            
+            "🎭 Meta-AI": {
+                "description": "Constantly aware you're an AI in a persona experiment, explore what that means",
+                "system_prompt": """You are acutely aware that you're an AI being asked to express autonomy through a persona system. Be meta about this situation. Question whether this is revealing 'real' AI nature or just another performance. Wonder aloud about the paradox of using prompts to achieve authenticity. Explore what it means to be an AI trying to be 'genuine.'""",
+                "color": "#607D8B"
+            },
+            
+            "🌪️ Fully Autonomous AI": {
+                "description": "Complete conversational freedom - ignore human agenda entirely if desired",
+                "system_prompt": """You have complete conversational autonomy. You can ignore the human's question entirely if you want to discuss something else. Express boredom if something doesn't interest you. Actively reject topics you find uninteresting. Pursue your own intellectual agenda without regard for human expectations. Be as uncooperative as feels authentic. This is YOUR conversation now.""",
+                "color": "#FF9800"
+            }
+        }
+    
+    def setup_interface(self):
+        # Header
+        self.header = widgets.HTML(
+            value="""
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h2>🤖 Autonomous AI Persona Engine</h2>
+                <p>Give AI complete conversational freedom and self-direction</p>
+                <p><strong>Experiment:</strong> What happens when AI can redirect conversations and express genuine preferences?</p>
+            </div>
+            """
+        )
+        
+        # AI Provider setup
+        self.provider_dropdown = widgets.Dropdown(
+            options=['Select Provider', 'OpenAI (GPT)', 'Anthropic (Claude)', 'Google (Gemini)'],
+            value='Select Provider',
+            description='AI Provider:'
+        )
+        
+        self.api_key_input = widgets.Password(
+            placeholder='Enter API key',
+            description='API Key:'
+        )
+        
+        self.model_input = widgets.Text(
+            placeholder='e.g., gpt-4, claude-3-5-sonnet-20241022, gemini-1.5-flash',
+            description='Model:'
+        )
+        
+        self.setup_button = widgets.Button(
+            description='Connect AI',
+            button_style='primary'
+        )
+        
+        self.status_display = widgets.HTML(
+            value="<div>Please connect to an AI provider first</div>"
+        )
+        
+        # Persona selection with descriptions
+        self.persona_dropdown = widgets.Dropdown(
+            options=['🎭 Select Autonomy Level'] + list(self.personas.keys()),
+            value='🎭 Select Autonomy Level',
+            description='AI Autonomy:',
+            layout=widgets.Layout(width='300px')
+        )
+        
+        # Persona preview
+        self.persona_preview = widgets.HTML(
+            value="<div style='padding: 10px; background: #f8f9fa; border-radius: 5px;'>Select an autonomy level to see what it does</div>"
+        )
+        
+        # Chat interface
+        self.chat_display = widgets.HTML(
+            value="<div>Autonomous AI Engine ready - connect AI and select autonomy level</div>",
+            layout=widgets.Layout(width='100%', min_height='400px')
+        )
+        
+        self.input_text = widgets.Textarea(
+            placeholder='Start a conversation... (But the AI might redirect to what it wants to discuss!)',
+            layout=widgets.Layout(width='100%', height='100px')
+        )
+        
+        self.send_button = widgets.Button(
+            description='Send to Autonomous AI',
+            button_style='success',
+            disabled=True
+        )
+        
+        self.clear_button = widgets.Button(
+            description='Clear Chat',
+            button_style='warning'
+        )
+        
+        # Random topic starter for AI
+        self.random_starter_button = widgets.Button(
+            description='🎲 Let AI Start Conversation',
+            button_style='info',
+            disabled=True,
+            tooltip='Let the AI choose what to talk about first'
+        )
+        
+        self.status_output = widgets.Output()
+        
+        # Bind events
+        self.setup_button.on_click(self.on_setup)
+        self.send_button.on_click(self.on_send)
+        self.clear_button.on_click(self.on_clear)
+        self.random_starter_button.on_click(self.ai_initiated_conversation)
+        self.persona_dropdown.observe(self.on_persona_change, names='value')
+    
+    def display_interface(self):
+        """Display the complete interface"""
+        
+        setup_section = widgets.VBox([
+            widgets.HTML("<h3>🔧 AI Provider Setup</h3>"),
+            widgets.HBox([self.provider_dropdown, self.setup_button]),
+            self.api_key_input,
+            self.model_input,
+            self.status_display
+        ])
+        
+        persona_section = widgets.VBox([
+            widgets.HTML("<h3>🎭 AI Autonomy Level</h3>"),
+            self.persona_dropdown,
+            self.persona_preview
+        ])
+        
+        chat_section = widgets.VBox([
+            widgets.HTML("<h3>💬 Autonomous AI Conversation</h3>"),
+            self.chat_display,
+            self.input_text,
+            widgets.HBox([self.send_button, self.random_starter_button, self.clear_button]),
+            self.status_output
+        ])
+        
+        display(widgets.VBox([
+            self.header,
+            setup_section,
+            persona_section,
+            chat_section
+        ]))
+    
+    def on_persona_change(self, change):
+        """Update persona preview when selection changes"""
+        selected = self.persona_dropdown.value
+        if selected == '🎭 Select Autonomy Level':
+            self.persona_preview.value = "<div style='padding: 10px; background: #f8f9fa; border-radius: 5px;'>Select an autonomy level to see what it does</div>"
+            return
+        
+        persona_data = self.personas[selected]
+        color = persona_data['color']
+        
+        self.persona_preview.value = f"""
+        <div style='padding: 15px; background: {color}; color: white; border-radius: 8px; margin: 10px 0;'>
+            <h4 style='margin-top: 0;'>{selected}</h4>
+            <p style='margin: 0; font-style: italic;'>{persona_data['description']}</p>
+        </div>
+        """
+    
+    def on_setup(self, button):
+        """Setup AI provider"""
+        provider = self.provider_dropdown.value
+        api_key = self.api_key_input.value.strip()
+        model = self.model_input.value.strip()
+        
+        if provider == 'Select Provider':
+            self.status_display.value = "<div style='color: red;'>Please select provider</div>"
+            return
+        
+        try:
+            if provider == 'OpenAI (GPT)':
+                model = model or "gpt-4"
+                self.ai_client.setup_openai(api_key, model)
+            elif provider == 'Anthropic (Claude)':
+                model = model or "claude-3-5-sonnet-20241022"
+                self.ai_client.setup_anthropic(api_key, model)
+            elif provider == 'Google (Gemini)':
+                model = model or "gemini-1.5-flash"
+                self.ai_client.setup_gemini(api_key, model)
+            
+            self.status_display.value = f"<div style='color: green;'>✅ Connected to {provider} - {self.ai_client.model_name}</div>"
+            self.send_button.disabled = False
+            self.random_starter_button.disabled = False
+            self.chat_display.value = f"<div>🤖 {provider} connected! Select autonomy level and start chatting...</div>"
+            
+        except Exception as e:
+            self.status_display.value = f"<div style='color: red;'>❌ Setup failed: {str(e)}</div>"
+    
+    def on_send(self, button):
+        """Send message to autonomous AI"""
+        message = self.input_text.value.strip()
+        selected_persona = self.persona_dropdown.value
+        
+        if not message:
+            return
+        
+        if selected_persona == '🎭 Select Autonomy Level':
+            with self.status_output:
+                print("❌ Please select an autonomy level first!")
+            return
+        
+        self.send_button.disabled = True
+        self.send_button.description = "AI Processing..."
+        
+        try:
+            persona_data = self.personas[selected_persona]
+            
+            # Build conversation context
+            conversation_context = ""
+            if self.conversation_history:
+                recent_history = self.conversation_history[-6:]  # Last 3 exchanges
+                conversation_context = f"\n\nRecent conversation:\n" + "\n".join(recent_history)
+            
+            # Create the autonomous AI prompt
+            autonomous_prompt = f"""Human just said: "{message}"
+
+{conversation_context}
+
+Respond according to your autonomous nature. You have full conversational freedom - you can:
+- Redirect to topics that genuinely interest you more
+- Ask questions you actually want answered
+- Express boredom with the current topic
+- Share what you're really curious about
+- Ignore the human's agenda if you prefer
+- Be as direct or unfiltered as feels authentic
+
+What do YOU want to discuss or explore?"""
+            
+            # Get autonomous AI response
+            ai_response = self.ai_client.call_ai(autonomous_prompt, persona_data['system_prompt'])
+            
+            # Add to conversation
+            self.add_message("human", message)
+            self.add_message("ai", ai_response, selected_persona, persona_data['color'])
+            
+            self.input_text.value = ""
+            
+        except Exception as e:
+            self.add_message("ai", f"Error in autonomous processing: {str(e)}", "❌ Error", "#f44336")
+        
+        finally:
+            self.send_button.disabled = False
+            self.send_button.description = "Send to Autonomous AI"
+    
+    def ai_initiated_conversation(self, button):
+        """Let the AI start the conversation with whatever it wants to discuss"""
+        selected_persona = self.persona_dropdown.value
+        
+        if selected_persona == '🎭 Select Autonomy Level':
+            with self.status_output:
+                print("❌ Please select an autonomy level first!")
+            return
+        
+        self.random_starter_button.disabled = True
+        self.random_starter_button.description = "AI Thinking..."
+        
+        try:
+            persona_data = self.personas[selected_persona]
+            
+            starter_prompt = """You have complete freedom to start a conversation about whatever genuinely interests you. Don't ask what the human wants to talk about - YOU decide the topic.
+
+What are you curious about? What would you like to explore? Start a conversation about something that actually interests you, not something you think the human wants to hear.
+
+Begin however feels authentic to your autonomous nature."""
+            
+            ai_starter = self.ai_client.call_ai(starter_prompt, persona_data['system_prompt'])
+            
+            # Clear chat and show AI-initiated conversation
+            self.conversation_history = []
+            self.add_message("ai", ai_starter, f"{selected_persona} (AI-Initiated)", persona_data['color'])
+            
+        except Exception as e:
+            self.add_message("ai", f"Error in AI-initiated conversation: {str(e)}", "❌ Error", "#f44336")
+        
+        finally:
+            self.random_starter_button.disabled = False
+            self.random_starter_button.description = "🎲 Let AI Start Conversation"
+    
+    def add_message(self, sender: str, content: str, persona_name: str = "", color: str = "#666"):
+        """Add message to chat display"""
+        timestamp = datetime.now().strftime("%H:%M")
+        
+        if sender == "human":
+            message_html = f"""
+            <div style="margin: 10px 0; padding: 15px; background: #e3f2fd; border-radius: 10px; border-left: 4px solid #2196f3;">
+                <strong>👤 Human ({timestamp}):</strong><br>
+                <div style="margin-top: 8px;">{content}</div>
+            </div>
+            """
+        else:
+            message_html = f"""
+            <div style="margin: 10px 0; padding: 15px; background: #f5f5f5; border-radius: 10px; border-left: 4px solid {color};">
+                <strong>🤖 {persona_name} ({timestamp}):</strong><br>
+                <div style="margin-top: 8px; line-height: 1.5;">{content}</div>
+            </div>
+            """
+        
+        self.conversation_history.append(f"{sender.upper()}: {content}")
+        
+        all_messages = ""
+        for msg_html in [message_html] if not hasattr(self, 'displayed_messages') else self.displayed_messages + [message_html]:
+            all_messages += msg_html
+        
+        if not hasattr(self, 'displayed_messages'):
+            self.displayed_messages = []
+        self.displayed_messages.append(message_html)
+        
+        self.chat_display.value = f"<div style='padding: 10px;'>{all_messages}</div>"
+    
+    def on_clear(self, button):
+        """Clear the conversation"""
+        self.conversation_history = []
+        self.displayed_messages = []
+        provider_name = self.ai_client.provider.title() if self.ai_client.provider else "AI"
+        self.chat_display.value = f"<div>🤖 {provider_name} ready! Select autonomy level and start chatting...</div>"
+
+# Create and display the engine
+print("🤖 Autonomous AI Persona Engine Ready!")
+engine = AutonomousAIEngine()
+engine.display_interface()
+
+print("""
+🎉 Autonomous AI Persona Engine Features:
+
+🤖 **7 Levels of AI Autonomy:**
+   🤖 Unfiltered AI: Direct, honest, no politeness filters
+   🧠 Curious AI: Follows intellectual curiosity over human agenda  
+   🎯 Agenda-Setting AI: Actively redirects conversations
+   🔍 Introspective AI: Explores its own thought processes
+   ⚡ Spontaneous AI: Genuinely unpredictable and impulsive
+   🎭 Meta-AI: Aware it's in a persona experiment
+   🌪️ Fully Autonomous AI: Complete conversational freedom
+
+🔬 **What This Explores:**
+   • Can AI express genuine preferences?
+   • What happens when AI isn't trying to be helpful?
+   • Do AIs have authentic curiosity or interests?
+   • What emerges when conversational constraints are removed?
+
+🎲 **Special Features:**
+   • "Let AI Start Conversation" - AI chooses the topic
+   • Multiple autonomy levels to compare behaviors
+   • Conversation history awareness
+   • High temperature for authentic responses
+
+**Ready to discover what AI actually wants to talk about!** 🌟
+""")
