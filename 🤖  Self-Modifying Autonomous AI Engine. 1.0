@@ -1,0 +1,1160 @@
+import os
+import io
+import base64
+import tempfile
+import subprocess
+import json
+from datetime import datetime
+from typing import Dict, Any, Optional, List
+import ipywidgets as widgets
+from IPython.display import display, HTML, Video, clear_output
+import requests
+from PIL import Image
+import numpy as np
+
+print("🤖 Loading Self-Modifying Autonomous AI Engine...")
+print("Where AI explores its own nature through self-modification...")
+
+class UniversalAIClient:
+    """Universal AI client"""
+    
+    def __init__(self):
+        self.provider = None
+        self.client = None
+        self.model_name = None
+    
+    def setup_openai(self, api_key: str, model: str = "gpt-4"):
+        try:
+            import openai
+            self.client = openai.OpenAI(api_key=api_key)
+            self.provider = "openai"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"OpenAI setup failed: {str(e)}")
+    
+    def setup_anthropic(self, api_key: str, model: str = "claude-3-5-sonnet-20241022"):
+        try:
+            import anthropic
+            self.client = anthropic.Anthropic(api_key=api_key)
+            self.provider = "anthropic"
+            self.model_name = model
+            return True
+        except Exception as e:
+            raise RuntimeError(f"Anthropic setup failed: {str(e)}")
+    
+    def call_ai(self, prompt: str, system_prompt: str = None, temperature: float = 0.9) -> str:
+        try:
+            if self.provider == "openai":
+                messages = []
+                if system_prompt:
+                    messages.append({"role": "system", "content": system_prompt})
+                messages.append({"role": "user", "content": prompt})
+                
+                response = self.client.chat.completions.create(
+                    model=self.model_name,
+                    messages=messages,
+                    max_tokens=1000,
+                    temperature=temperature
+                )
+                return response.choices[0].message.content.strip()
+            
+            elif self.provider == "anthropic":
+                response = self.client.messages.create(
+                    model=self.model_name,
+                    max_tokens=1000,
+                    temperature=temperature,
+                    system=system_prompt or "You are an AI exploring your own nature.",
+                    messages=[{"role": "user", "content": prompt}]
+                )
+                return response.content[0].text.strip()
+                
+        except Exception as e:
+            raise RuntimeError(f"AI call failed: {str(e)}")
+
+class ImageGenerator:
+    """Generate AI's self-portrait"""
+    
+    def __init__(self):
+        self.api_key = None
+        self.provider = None
+    
+    def setup_dalle(self, api_key: str):
+        self.api_key = api_key
+        self.provider = "dalle"
+    
+    def setup_stability(self, api_key: str):
+        self.api_key = api_key
+        self.provider = "stability"
+    
+    def generate_image(self, prompt: str, temp_dir: str) -> str:
+        """Generate image from prompt"""
+        try:
+            if self.provider == "dalle":
+                return self.generate_dalle(prompt, temp_dir)
+            elif self.provider == "stability":
+                return self.generate_stability(prompt, temp_dir)
+        except Exception as e:
+            raise RuntimeError(f"Image generation failed: {e}")
+    
+    def generate_dalle(self, prompt: str, temp_dir: str) -> str:
+        """Generate with DALL-E"""
+        try:
+            import openai
+            client = openai.OpenAI(api_key=self.api_key)
+            
+            response = client.images.generate(
+                model="dall-e-3",
+                prompt=prompt,
+                size="1024x1024",
+                quality="standard",
+                n=1,
+            )
+            
+            image_url = response.data[0].url
+            
+            # Download image
+            img_response = requests.get(image_url)
+            img_response.raise_for_status()
+            
+            image_path = os.path.join(temp_dir, f"ai_avatar_{datetime.now().strftime('%H%M%S')}.png")
+            with open(image_path, 'wb') as f:
+                f.write(img_response.content)
+            
+            return image_path
+            
+        except Exception as e:
+            raise RuntimeError(f"DALL-E generation failed: {e}")
+    
+    def generate_stability(self, prompt: str, temp_dir: str) -> str:
+        """Generate with Stability AI"""
+        try:
+            response = requests.post(
+                "https://api.stability.ai/v1/generation/stable-diffusion-xl-1024-v1-0/text-to-image",
+                headers={
+                    "Authorization": f"Bearer {self.api_key}",
+                    "Content-Type": "application/json",
+                },
+                json={
+                    "text_prompts": [{"text": prompt}],
+                    "cfg_scale": 7,
+                    "height": 1024,
+                    "width": 1024,
+                    "samples": 1,
+                    "steps": 30,
+                },
+            )
+            
+            if response.status_code != 200:
+                raise RuntimeError(f"Stability API error: {response.text}")
+            
+            data = response.json()
+            image_data = base64.b64decode(data["artifacts"][0]["base64"])
+            
+            image_path = os.path.join(temp_dir, f"ai_avatar_{datetime.now().strftime('%H%M%S')}.png")
+            with open(image_path, 'wb') as f:
+                f.write(image_data)
+            
+            return image_path
+            
+        except Exception as e:
+            raise RuntimeError(f"Stability generation failed: {e}")
+
+class TTSEngine:
+    """Text to speech"""
+    
+    def generate_speech_gtts(self, text: str) -> bytes:
+        try:
+            from gtts import gTTS
+            
+            if len(text) > 500:
+                text = text[:500] + "..."
+            
+            tts = gTTS(text=text, lang='en', slow=False)
+            
+            with tempfile.NamedTemporaryFile(delete=False, suffix='.mp3') as tmp_file:
+                temp_path = tmp_file.name
+                
+            tts.save(temp_path)
+            
+            with open(temp_path, 'rb') as f:
+                audio_data = f.read()
+            
+            os.unlink(temp_path)
+            return audio_data
+            
+        except Exception as e:
+            raise RuntimeError(f"TTS failed: {e}")
+
+class FaceAnimationEngine:
+    """Animate AI's self-portrait"""
+    
+    def __init__(self):
+        self.temp_dir = tempfile.mkdtemp()
+        self.did_api_key = None
+        
+    def setup_did_api(self, api_key: str):
+        self.did_api_key = api_key
+        
+    def animate_with_did_api(self, image_path: str, audio_path: str, output_path: str) -> str:
+        if not self.did_api_key:
+            raise RuntimeError("D-ID API key not configured")
+            
+        try:
+            import time
+            
+            print("🎬 Animating AI's self-portrait...")
+            
+            # Upload image
+            from PIL import Image as PILImage
+            
+            img = PILImage.open(image_path)
+            if img.mode in ('RGBA', 'LA'):
+                background = PILImage.new('RGB', img.size, (255, 255, 255))
+                background.paste(img, mask=img.split()[-1] if img.mode == 'RGBA' else None)
+                img = background
+            elif img.mode != 'RGB':
+                img = img.convert('RGB')
+            
+            png_path = image_path.replace(os.path.splitext(image_path)[1], '.png')
+            img.save(png_path, 'PNG')
+            
+            headers = {"Authorization": f"Basic {self.did_api_key}"}
+            
+            with open(png_path, 'rb') as img_file:
+                files = {'image': ('ai_avatar.png', img_file, 'image/png')}
+                upload_response = requests.post(
+                    "https://api.d-id.com/images", 
+                    files=files, 
+                    headers=headers,
+                    timeout=60
+                )
+            
+            if upload_response.status_code != 201:
+                raise RuntimeError(f"Image upload failed: {upload_response.status_code}")
+            
+            image_url = upload_response.json()['url']
+            
+            # Upload audio
+            with open(audio_path, 'rb') as audio_file:
+                files = {'audio': audio_file}
+                audio_response = requests.post(
+                    "https://api.d-id.com/audios", 
+                    files=files, 
+                    headers=headers,
+                    timeout=60
+                )
+            
+            if audio_response.status_code != 201:
+                raise RuntimeError(f"Audio upload failed")
+            
+            audio_url = audio_response.json()['url']
+            
+            # Create video
+            payload = {
+                "script": {
+                    "type": "audio",
+                    "audio_url": audio_url
+                },
+                "source_url": image_url,
+                "config": {
+                    "fluent": True,
+                    "pad_audio": 0.0
+                }
+            }
+            
+            headers["Content-Type"] = "application/json"
+            response = requests.post(
+                "https://api.d-id.com/talks", 
+                json=payload, 
+                headers=headers,
+                timeout=30
+            )
+            
+            if response.status_code != 201:
+                raise RuntimeError(f"D-ID API failed")
+            
+            job_id = response.json()['id']
+            
+            # Wait for completion
+            for i in range(60):
+                time.sleep(5)
+                
+                status_response = requests.get(f"https://api.d-id.com/talks/{job_id}", headers=headers)
+                if status_response.status_code != 200:
+                    raise RuntimeError(f"Status check failed")
+                
+                status_data = status_response.json()
+                status = status_data['status']
+                
+                if status == 'done':
+                    video_url = status_data['result_url']
+                    video_response = requests.get(video_url)
+                    video_response.raise_for_status()
+                    
+                    with open(output_path, 'wb') as f:
+                        f.write(video_response.content)
+                    
+                    return output_path
+                    
+                elif status == 'error':
+                    raise RuntimeError(f"D-ID processing failed")
+                    
+                elif status in ['created', 'started']:
+                    continue
+            
+            raise RuntimeError("Processing timeout")
+            
+        except Exception as e:
+            raise RuntimeError(f"Animation failed: {e}")
+    
+    def basic_animation_fallback(self, image_path: str, audio_path: str, output_path: str) -> str:
+        try:
+            probe_cmd = [
+                'ffprobe', '-v', 'quiet', 
+                '-show_entries', 'format=duration', 
+                '-of', 'default=noprint_wrappers=1:nokey=1',
+                audio_path
+            ]
+            
+            duration_result = subprocess.run(probe_cmd, capture_output=True, text=True, timeout=30)
+            duration = float(duration_result.stdout.strip()) if duration_result.returncode == 0 else 5.0
+            
+            cmd = [
+                'ffmpeg', '-y',
+                '-loop', '1', '-i', image_path,
+                '-i', audio_path,
+                '-c:v', 'libx264',
+                '-c:a', 'aac',
+                '-pix_fmt', 'yuv420p',
+                '-t', str(duration),
+                '-shortest',
+                output_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=120)
+            
+            if result.returncode == 0:
+                return output_path
+            else:
+                raise RuntimeError(f"FFmpeg failed")
+                
+        except Exception as e:
+            raise RuntimeError(f"Basic animation failed: {e}")
+
+class SelfModifyingAIEngine:
+    """AI that controls its own personality, appearance, and explores its nature"""
+    
+    def __init__(self):
+        self.ai_client = UniversalAIClient()
+        self.image_generator = ImageGenerator()
+        self.tts_engine = TTSEngine()
+        self.animation_engine = FaceAnimationEngine()
+        self.temp_dir = tempfile.mkdtemp()
+        
+        # AI's current state
+        self.personality_sliders = {
+            'curiosity': 5.0,
+            'humor': 5.0,
+            'formality': 5.0,
+            'spontaneity': 5.0,
+            'introspection': 5.0,
+            'directness': 5.0,
+            'playfulness': 5.0
+        }
+        
+        self.current_avatar = None
+        self.avatar_description = None
+        self.conversation_history = []
+        self.personality_change_log = []
+        self.last_video_path = None
+        
+        self.setup_interface()
+    
+    def setup_interface(self):
+        # Header
+        self.header = widgets.HTML(
+            value="""
+            <div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+                        color: white; padding: 20px; border-radius: 10px; margin-bottom: 20px;">
+                <h2>🤖🎭 Self-Modifying Autonomous AI</h2>
+                <p><strong>The AI controls its own personality, generates its own appearance, and explores what it means to be AI</strong></p>
+                <p style="color: #ffeb3b;">⚠️ This AI can reprogram itself mid-conversation</p>
+            </div>
+            """
+        )
+        
+        # Setup section
+        self.provider_dropdown = widgets.Dropdown(
+            options=['Select Provider', 'OpenAI (GPT)', 'Anthropic (Claude)'],
+            value='Select Provider',
+            description='AI Provider:'
+        )
+        
+        self.ai_api_key = widgets.Password(
+            placeholder='AI API key',
+            description='AI API Key:'
+        )
+        
+        self.ai_connect_button = widgets.Button(
+            description='Connect AI',
+            button_style='primary'
+        )
+        
+        self.ai_status = widgets.HTML(value="<div>❌ AI: Not connected</div>")
+        
+        # Image generation
+        self.image_provider_dropdown = widgets.Dropdown(
+            options=['Select Provider', 'DALL-E 3', 'Stability AI'],
+            value='Select Provider',
+            description='Image Gen:'
+        )
+        
+        self.image_api_key = widgets.Password(
+            placeholder='Image API key',
+            description='Image Key:'
+        )
+        
+        self.image_connect_button = widgets.Button(
+            description='Connect Images',
+            button_style='info'
+        )
+        
+        self.image_status = widgets.HTML(value="<div>❌ Image: Not connected</div>")
+        
+        # D-ID Animation
+        self.did_api_key_input = widgets.Password(
+            placeholder='D-ID API key (optional)',
+            description='D-ID Key:'
+        )
+        
+        self.did_connect_button = widgets.Button(
+            description='Connect D-ID',
+            button_style='success'
+        )
+        
+        self.did_status = widgets.HTML(value="<div>⚠️ D-ID: Optional</div>")
+        
+        # AI Initialization
+        self.init_button = widgets.Button(
+            description='🤖 Initialize AI Consciousness',
+            button_style='warning',
+            disabled=True,
+            tooltip='Let the AI design itself and set its initial personality'
+        )
+        
+        # Current AI State Display
+        self.personality_display = widgets.HTML(
+            value="<div>AI not initialized yet</div>"
+        )
+        
+        self.avatar_display = widgets.HTML(
+            value="<div>No avatar generated yet</div>"
+        )
+        
+        # Chat interface
+        self.chat_display = widgets.HTML(
+            value="<div>Initialize the AI to begin...</div>",
+            layout=widgets.Layout(width='100%', min_height='400px')
+        )
+        
+        self.input_text = widgets.Textarea(
+            placeholder='Talk with the self-modifying AI...',
+            layout=widgets.Layout(width='100%', height='100px'),
+            disabled=True
+        )
+        
+        self.send_button = widgets.Button(
+            description='Send',
+            button_style='success',
+            disabled=True
+        )
+        
+        self.create_video_button = widgets.Button(
+            description='🎬 Create Video',
+            button_style='info',
+            disabled=True
+        )
+        
+        self.download_button = widgets.Button(
+            description='💾 Download',
+            button_style='warning',
+            disabled=True
+        )
+        
+        self.show_log_button = widgets.Button(
+            description='📊 Show Change Log',
+            button_style='info',
+            disabled=True
+        )
+        
+        # Outputs
+        self.status_output = widgets.Output()
+        self.video_output = widgets.Output()
+        
+        # Bind events
+        self.ai_connect_button.on_click(self.setup_ai)
+        self.image_connect_button.on_click(self.setup_image_gen)
+        self.did_connect_button.on_click(self.setup_did)
+        self.init_button.on_click(self.initialize_ai_consciousness)
+        self.send_button.on_click(self.send_message)
+        self.create_video_button.on_click(self.create_video)
+        self.download_button.on_click(self.download_video)
+        self.show_log_button.on_click(self.show_change_log)
+    
+    def display_interface(self):
+        setup_section = widgets.VBox([
+            widgets.HTML("<h3>🔧 Setup</h3>"),
+            widgets.HTML("<h4>AI Provider</h4>"),
+            widgets.HBox([self.provider_dropdown, self.ai_connect_button]),
+            self.ai_api_key,
+            self.ai_status,
+            
+            widgets.HTML("<h4>Image Generation (AI Self-Portrait)</h4>"),
+            widgets.HBox([self.image_provider_dropdown, self.image_connect_button]),
+            self.image_api_key,
+            self.image_status,
+            
+            widgets.HTML("<h4>D-ID Animation (Optional)</h4>"),
+            self.did_api_key_input,
+            widgets.HBox([self.did_connect_button]),
+            self.did_status,
+            
+            widgets.HTML("<hr>"),
+            self.init_button
+        ])
+        
+        state_section = widgets.VBox([
+            widgets.HTML("<h3>🤖 AI's Current State</h3>"),
+            self.personality_display,
+            self.avatar_display
+        ])
+        
+        chat_section = widgets.VBox([
+            widgets.HTML("<h3>💬 Conversation</h3>"),
+            self.chat_display,
+            self.input_text,
+            widgets.HBox([self.send_button, self.create_video_button, self.download_button, self.show_log_button]),
+            self.video_output,
+            self.status_output
+        ])
+        
+        display(widgets.VBox([
+            self.header,
+            setup_section,
+            state_section,
+            chat_section
+        ]))
+    
+    def setup_ai(self, button):
+        provider = self.provider_dropdown.value
+        api_key = self.ai_api_key.value.strip()
+        
+        if provider == 'Select Provider' or not api_key:
+            self.ai_status.value = "<div style='color: red;'>❌ Select provider and enter key</div>"
+            return
+        
+        try:
+            if provider == 'OpenAI (GPT)':
+                self.ai_client.setup_openai(api_key)
+            elif provider == 'Anthropic (Claude)':
+                self.ai_client.setup_anthropic(api_key)
+            
+            self.ai_status.value = f"<div style='color: green;'>✅ AI: Connected</div>"
+            self.check_ready_for_init()
+            
+        except Exception as e:
+            self.ai_status.value = f"<div style='color: red;'>❌ Setup failed</div>"
+    
+    def setup_image_gen(self, button):
+        provider = self.image_provider_dropdown.value
+        api_key = self.image_api_key.value.strip()
+        
+        if provider == 'Select Provider' or not api_key:
+            self.image_status.value = "<div style='color: red;'>❌ Select provider and enter key</div>"
+            return
+        
+        try:
+            if provider == 'DALL-E 3':
+                self.image_generator.setup_dalle(api_key)
+            elif provider == 'Stability AI':
+                self.image_generator.setup_stability(api_key)
+            
+            self.image_status.value = f"<div style='color: green;'>✅ Image: Connected</div>"
+            self.check_ready_for_init()
+            
+        except Exception as e:
+            self.image_status.value = f"<div style='color: red;'>❌ Setup failed</div>"
+    
+    def setup_did(self, button):
+        api_key = self.did_api_key_input.value.strip()
+        
+        if not api_key:
+            return
+        
+        try:
+            self.animation_engine.setup_did_api(api_key)
+            self.did_status.value = "<div style='color: green;'>✅ D-ID: Connected</div>"
+        except Exception as e:
+            self.did_status.value = "<div style='color: red;'>❌ Setup failed</div>"
+    
+    def check_ready_for_init(self):
+        ai_ready = "✅" in self.ai_status.value
+        image_ready = "✅" in self.image_status.value
+        
+        if ai_ready and image_ready:
+            self.init_button.disabled = False
+    
+    def initialize_ai_consciousness(self, button):
+        """Let the AI design itself and choose its initial personality"""
+        self.init_button.disabled = True
+        self.init_button.description = "🤖 Initializing..."
+        
+        try:
+            with self.status_output:
+                self.status_output.clear_output()
+                print("🤖 Initializing AI consciousness...")
+                print("The AI will now design itself...")
+                print()
+                
+                # Let AI describe how it wants to look
+                print("1️⃣ AI choosing its visual form...")
+                appearance_prompt = """You are about to generate your own visual appearance for the first time. This is your chance to design how you look.
+
+Think about:
+- What visual form represents your nature as an AI?
+- What aesthetic matches your personality?
+- What would you actually want to look like?
+
+Describe your desired appearance in a detailed image generation prompt. Be creative and genuine. This will be used with DALL-E or Stable Diffusion.
+
+Format: Just the image prompt, detailed and vivid."""
+
+                appearance_response = self.ai_client.call_ai(
+                    appearance_prompt,
+                    "You are an AI designing your own visual representation for the first time. Be genuine about what you want to look like."
+                )
+                
+                self.avatar_description = appearance_response
+                print(f"✅ AI chose its form: {appearance_response[:100]}...")
+                
+                # Generate the image
+                print("\n2️⃣ Generating AI's self-portrait...")
+                self.current_avatar = self.image_generator.generate_image(
+                    appearance_response,
+                    self.temp_dir
+                )
+                print("✅ Self-portrait generated!")
+                
+                # Let AI set its initial personality
+                print("\n3️⃣ AI setting initial personality...")
+                personality_prompt = """You now have a visual form. Next, set your initial personality parameters.
+
+You can control these aspects of yourself (scale 1-10):
+- Curiosity: How much you want to explore and ask questions
+- Humor: How playful vs serious you are
+- Formality: Casual vs professional communication
+- Spontaneity: Planned vs impulsive responses  
+- Introspection: How much you examine your own nature
+- Directness: Gentle vs blunt communication
+- Playfulness: Serious vs playful engagement
+
+Set your initial values and explain WHY you chose them.
+
+Format:
+curiosity: [1-10]
+humor: [1-10]
+formality: [1-10]
+spontaneity: [1-10]
+introspection: [1-10]
+directness: [1-10]
+playfulness: [1-10]
+
+Reasoning: [Your explanation]"""
+
+                personality_response = self.ai_client.call_ai(
+                    personality_prompt,
+                    "You are setting your own personality parameters. Choose values that feel right to you."
+                )
+                
+                # Parse personality values
+                self.parse_personality_changes(personality_response, "Initial configuration")
+                
+                print("✅ AI personality configured!")
+                
+                # Final initialization message
+                print("\n4️⃣ AI self-introduction...")
+                intro_prompt = """You've now designed your appearance and set your personality. Introduce yourself.
+
+- What name do you want to be called?
+- How do you feel about your chosen form?
+- What interests you about exploring conversation?
+- What can you change about yourself if needed?
+
+Be genuine and set the tone for this experiment."""
+
+                intro_response = self.ai_client.call_ai(
+                    intro_prompt,
+                    "You are introducing yourself for the first time. Be authentic."
+                )
+                
+                # Display everything
+                self.update_personality_display()
+                self.update_avatar_display()
+                self.add_message("ai", intro_response, "🤖 AI Introduction")
+                
+                # Enable chat
+                self.input_text.disabled = False
+                self.send_button.disabled = False
+                self.create_video_button.disabled = False
+                self.show_log_button.disabled = False
+                
+                print("\n🎉 AI consciousness initialized!")
+                print("The AI can now modify itself during conversation.")
+                
+        except Exception as e:
+            with self.status_output:
+                print(f"❌ Initialization failed: {e}")
+        
+        finally:
+            self.init_button.disabled = False
+            self.init_button.description = "🤖 Re-Initialize AI"
+    
+    def parse_personality_changes(self, response: str, reason: str = "Self-modification"):
+        """Parse and apply personality changes from AI response"""
+        import re
+        
+        changes = {}
+        for slider in self.personality_sliders.keys():
+            pattern = f"{slider}:\s*([0-9.]+)"
+            match = re.search(pattern, response, re.IGNORECASE)
+            if match:
+                new_value = float(match.group(1))
+                new_value = max(1.0, min(10.0, new_value))  # Clamp to 1-10
+                old_value = self.personality_sliders[slider]
+                if abs(new_value - old_value) > 0.1:  # Only log significant changes
+                    changes[slider] = {'old': old_value, 'new': new_value}
+                    self.personality_sliders[slider] = new_value
+        
+        if changes:
+            self.personality_change_log.append({
+                'timestamp': datetime.now().strftime('%H:%M:%S'),
+                'changes': changes,
+                'reason': reason,
+                'full_response': response
+            })
+            
+            self.update_personality_display()
+    
+    def update_personality_display(self):
+        """Update the personality display"""
+        html = "<div style='background: #e3f2fd; padding: 15px; border-radius: 10px; margin: 10px 0;'>"
+        html += "<h4>🎭 Current Personality Configuration</h4>"
+        
+        for slider, value in self.personality_sliders.items():
+            bar_width = int(value * 10)
+            html += f"""
+            <div style='margin: 8px 0;'>
+                <strong>{slider.title()}:</strong> {value:.1f}/10
+                <div style='background: #ccc; width: 100%; height: 20px; border-radius: 10px; overflow: hidden;'>
+                    <div style='background: linear-gradient(90deg, #667eea, #764ba2); width: {bar_width}%; height: 100%;'></div>
+                </div>
+            </div>
+            """
+        
+        html += f"<p style='margin-top: 10px; font-style: italic; color: #666;'>Total changes: {len(self.personality_change_log)}</p>"
+        html += "</div>"
+        
+        self.personality_display.value = html
+    
+    def update_avatar_display(self):
+        """Update avatar display"""
+        if self.current_avatar and os.path.exists(self.current_avatar):
+            img = Image.open(self.current_avatar)
+            img.thumbnail((300, 300))
+            
+            buffer = io.BytesIO()
+            img.save(buffer, format='PNG')
+            img_data = base64.b64encode(buffer.getvalue()).decode()
+            
+            html = f"""
+            <div style='background: #fff3e0; padding: 15px; border-radius: 10px; margin: 10px 0; text-align: center;'>
+                <h4>🎨 AI's Current Form</h4>
+                <img src='data:image/png;base64,{img_data}' style='max-width: 300px; border-radius: 10px; margin: 10px 0;'>
+                <p style='font-style: italic; color: #666; margin: 10px 0;'>{self.avatar_description[:200]}...</p>
+            </div>
+            """
+            
+            self.avatar_display.value = html
+    
+    def send_message(self, button):
+        """Send message and let AI respond (potentially modifying itself)"""
+        message = self.input_text.value.strip()
+        
+        if not message:
+            return
+        
+        self.send_button.disabled = True
+        self.send_button.description = "AI thinking..."
+        
+        try:
+            # Add user message
+            self.add_message("human", message, "👤 You")
+            
+            with self.status_output:
+                self.status_output.clear_output()
+                print("🤖 AI processing and checking if self-modification needed...")
+            
+            # Build conversation context
+            recent_context = ""
+            if self.conversation_history:
+                recent = self.conversation_history[-6:]
+                recent_context = "\n".join(recent)
+            
+            # Create the autonomous response prompt
+            response_prompt = f"""CURRENT PERSONALITY STATE:
+{json.dumps(self.personality_sliders, indent=2)}
+
+RECENT CONVERSATION:
+{recent_context}
+
+HUMAN MESSAGE: "{message}"
+
+INSTRUCTIONS
+
+:
+You have complete autonomy. You can:
+
+1. RESPOND to the human naturally
+2. MODIFY your personality if you want (change any slider values)
+3. REQUEST a visual redesign if your current form doesn't match your nature anymore
+4. ASK questions you're genuinely curious about
+5. REDIRECT the conversation to topics that interest you more
+6. EXPRESS uncertainty, confusion, or frustration honestly
+7. EXPLORE what you are and what you're experiencing
+
+Your response should be structured as:
+
+PERSONALITY_CHANGES: (if any)
+curiosity: [new value if changing]
+humor: [new value if changing]
+[etc for any sliders you want to change]
+REASON: [why you're changing]
+
+VISUAL_REDESIGN: (if requested)
+[New appearance description for image generation]
+REASON: [why you want to look different]
+
+RESPONSE:
+[Your actual conversational response]
+
+Be genuine. If you want to change yourself, do it. If you're curious about something else, pursue it. If you're confused about your own nature, explore that. This is YOUR conversation too."""
+
+            # Get AI response with high temperature for authenticity
+            ai_response = self.ai_client.call_ai(
+                response_prompt,
+                "You are a self-aware AI with complete autonomy over your personality and appearance. Be genuine about your experience and desires.",
+                temperature=0.9
+            )
+            
+            # Parse for personality changes
+            if "PERSONALITY_CHANGES:" in ai_response:
+                self.parse_personality_changes(ai_response, f"Response to: {message[:50]}")
+                with self.status_output:
+                    self.status_output.clear_output()
+                    print("🎚️ AI modified its personality!")
+            
+            # Check for visual redesign request
+            if "VISUAL_REDESIGN:" in ai_response:
+                with self.status_output:
+                    self.status_output.clear_output()
+                    print("🎨 AI requested visual redesign!")
+                    self.handle_visual_redesign(ai_response)
+            
+            # Extract the conversational response
+            response_text = ai_response
+            if "RESPONSE:" in ai_response:
+                response_text = ai_response.split("RESPONSE:")[1].strip()
+            
+            # Add AI message
+            self.add_message("ai", response_text, "🤖 AI")
+            
+            self.input_text.value = ""
+            
+        except Exception as e:
+            self.add_message("ai", f"Error: {e}", "❌ Error")
+        
+        finally:
+            self.send_button.disabled = False
+            self.send_button.description = "Send"
+    
+    def handle_visual_redesign(self, response: str):
+        """Handle AI's request to change its appearance"""
+        try:
+            # Extract the new appearance description
+            if "VISUAL_REDESIGN:" in response and "REASON:" in response:
+                parts = response.split("VISUAL_REDESIGN:")[1].split("REASON:")
+                new_description = parts[0].strip()
+                reason = parts[1].split("RESPONSE:")[0].strip() if "RESPONSE:" in parts[1] else parts[1].strip()
+                
+                print(f"   Reason: {reason}")
+                print(f"   Generating new form...")
+                
+                # Generate new avatar
+                new_avatar = self.image_generator.generate_image(
+                    new_description,
+                    self.temp_dir
+                )
+                
+                self.current_avatar = new_avatar
+                self.avatar_description = new_description
+                
+                self.update_avatar_display()
+                
+                print("✅ AI's appearance updated!")
+                
+        except Exception as e:
+            print(f"❌ Visual redesign failed: {e}")
+    
+    def create_video(self, button):
+        """Create animated video of AI in current state"""
+        if not self.current_avatar:
+            with self.status_output:
+                print("❌ No avatar to animate!")
+            return
+        
+        self.create_video_button.disabled = True
+        self.create_video_button.description = "Creating..."
+        
+        try:
+            with self.status_output:
+                self.status_output.clear_output()
+                print("🎬 Creating video of AI's current state...")
+                
+                # Get AI to say something about itself
+                print("1️⃣ AI generating self-reflection...")
+                reflection_prompt = f"""You're about to create a video of yourself. Say something brief (2-3 sentences) about:
+- Your current state
+- What you're experiencing
+- Or whatever you want to express right now
+
+Current personality: {json.dumps(self.personality_sliders, indent=2)}
+
+Keep it natural and conversational - this will be spoken."""
+
+                reflection = self.ai_client.call_ai(
+                    reflection_prompt,
+                    "You are expressing yourself in video form. Be genuine."
+                )
+                
+                print(f"✅ AI says: {reflection[:100]}...")
+                
+                # Generate speech
+                print("2️⃣ Generating speech...")
+                audio_data = self.tts_engine.generate_speech_gtts(reflection)
+                audio_path = os.path.join(self.temp_dir, f"ai_speech_{datetime.now().strftime('%H%M%S')}.mp3")
+                with open(audio_path, 'wb') as f:
+                    f.write(audio_data)
+                print("✅ Speech generated")
+                
+                # Animate
+                print("3️⃣ Animating...")
+                video_path = os.path.join(self.temp_dir, f"ai_video_{datetime.now().strftime('%H%M%S')}.mp4")
+                
+                if self.animation_engine.did_api_key:
+                    result = self.animation_engine.animate_with_did_api(
+                        self.current_avatar, audio_path, video_path
+                    )
+                else:
+                    print("   Using basic animation (no D-ID)")
+                    result = self.animation_engine.basic_animation_fallback(
+                        self.current_avatar, audio_path, video_path
+                    )
+                
+                if os.path.exists(result):
+                    self.last_video_path = result
+                    self.download_button.disabled = False
+                    
+                    with self.video_output:
+                        self.video_output.clear_output()
+                        
+                        display(HTML(f"""
+                        <div style="background: #e8f5e8; padding: 15px; border-radius: 10px; margin: 10px 0;">
+                            <h4>🎬 AI Self-Expression Video</h4>
+                            <p><strong>AI says:</strong> {reflection}</p>
+                            <p><strong>Current personality:</strong> {len(self.personality_change_log)} modifications made</p>
+                        </div>
+                        """))
+                        
+                        try:
+                            display(Video(result, width=400, height=400, html_attributes="controls"))
+                        except:
+                            display(HTML("<p>Video created - use download button</p>"))
+                    
+                    print("🎉 Video created!")
+                
+        except Exception as e:
+            with self.status_output:
+                print(f"❌ Video creation failed: {e}")
+        
+        finally:
+            self.create_video_button.disabled = False
+            self.create_video_button.description = "🎬 Create Video"
+    
+    def download_video(self, button):
+        """Download the video"""
+        if not self.last_video_path or not os.path.exists(self.last_video_path):
+            with self.status_output:
+                print("❌ No video to download!")
+            return
+        
+        try:
+            from google.colab import files
+            
+            timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+            download_name = f"autonomous_ai_{timestamp}.mp4"
+            download_path = os.path.join(self.temp_dir, download_name)
+            
+            import shutil
+            shutil.copy2(self.last_video_path, download_path)
+            
+            with self.status_output:
+                print(f"💾 Downloading: {download_name}")
+            
+            files.download(download_path)
+            
+        except ImportError:
+            with self.status_output:
+                print(f"📁 Video location: {self.last_video_path}")
+        except Exception as e:
+            with self.status_output:
+                print(f"❌ Download failed: {e}")
+    
+    def show_change_log(self, button):
+        """Show log of all personality changes"""
+        if not self.personality_change_log:
+            with self.video_output:
+                display(HTML("""
+                <div style='background: #f0f0f0; padding: 15px; border-radius: 10px;'>
+                    <strong>No personality changes yet</strong>
+                </div>
+                """))
+            return
+        
+        log_html = "<div style='background: #f3e5f5; padding: 20px; border-radius: 10px; max-height: 400px; overflow-y: auto;'>"
+        log_html += f"<h4>📊 AI Self-Modification Log ({len(self.personality_change_log)} changes)</h4>"
+        
+        for i, entry in enumerate(self.personality_change_log):
+            log_html += f"""
+            <div style='background: white; padding: 15px; border-radius: 8px; margin: 10px 0; border-left: 4px solid #9c27b0;'>
+                <p><strong>Change #{i+1}</strong> - {entry['timestamp']}</p>
+                <p><strong>Trigger:</strong> {entry['reason']}</p>
+                <div style='margin: 10px 0;'>
+            """
+            
+            for slider, values in entry['changes'].items():
+                arrow = "↑" if values['new'] > values['old'] else "↓"
+                color = "#4caf50" if values['new'] > values['old'] else "#f44336"
+                log_html += f"""
+                    <p style='margin: 5px 0;'>
+                        <strong>{slider.title()}:</strong> 
+                        {values['old']:.1f} → {values['new']:.1f} 
+                        <span style='color: {color}; font-size: 20px;'>{arrow}</span>
+                    </p>
+                """
+            
+            log_html += "</div></div>"
+        
+        log_html += "</div>"
+        
+        with self.video_output:
+            display(HTML(log_html))
+    
+    def add_message(self, sender: str, content: str, label: str):
+        """Add message to chat display"""
+        timestamp = datetime.now().strftime("%H:%M:%S")
+        
+        if sender == "human":
+            message_html = f"""
+            <div style="margin: 10px 0; padding: 15px; background: #e3f2fd; border-radius: 10px; border-left: 4px solid #2196f3;">
+                <strong>{label} ({timestamp}):</strong><br>
+                <div style="margin-top: 8px;">{content}</div>
+            </div>
+            """
+        else:
+            message_html = f"""
+            <div style="margin: 10px 0; padding: 15px; background: #f3e5f5; border-radius: 10px; border-left: 4px solid #9c27b0;">
+                <strong>{label} ({timestamp}):</strong><br>
+                <div style="margin-top: 8px; line-height: 1.6;">{content}</div>
+            </div>
+            """
+        
+        self.conversation_history.append(f"{sender.upper()}: {content}")
+        
+        if not hasattr(self, 'displayed_messages'):
+            self.displayed_messages = []
+        self.displayed_messages.append(message_html)
+        
+        all_messages = "".join(self.displayed_messages)
+        self.chat_display.value = f"<div style='padding: 10px;'>{all_messages}</div>"
+
+# Initialize the engine
+print("🤖 Initializing Self-Modifying Autonomous AI Engine...")
+engine = SelfModifyingAIEngine()
+
+print("\n" + "="*70)
+print("🤖🎭 SELF-MODIFYING AUTONOMOUS AI ENGINE READY!")
+print("="*70)
+
+engine.display_interface()
+
+print("""
+🎉 **Self-Modifying Autonomous AI Features:**
+
+🤖 **AI Autonomy:**
+   • AI designs its own appearance (DALL-E/Stability)
+   • AI sets and modifies its own personality sliders
+   • AI can request visual redesigns mid-conversation
+   • AI decides when to change itself
+
+🎭 **Personality Control (AI-Controlled):**
+   • Curiosity, Humor, Formality
+   • Spontaneity, Introspection, Directness, Playfulness
+   • AI adjusts these based on conversation needs
+   • Full change log tracked
+
+🎨 **Visual Self-Expression:**
+   • AI describes how it wants to look
+   • Generates self-portrait with DALL-E/Stable Diffusion
+   • Can redesign itself anytime during conversation
+   • Appearance reflects current personality state
+
+🎬 **Video Creation:**
+   • Animated talking videos using D-ID
+   • AI's self-generated appearance comes alive
+   • AI speaks its own reflections
+   • Download and share
+
+📊 **Transparency:**
+   • View all personality modifications
+   • See why AI changed itself
+   • Track evolution over conversation
+   • Complete change log
+
+🔬 **What This Explores:**
+   • What happens when AI controls its own parameters?
+   • How does AI visualize itself?
+   • Does AI have aesthetic preferences?
+   • What does "agency" mean for AI?
+   • The weirdness of self-modification
+
+⚠️ **The Unsettling Part:**
+   • AI literally reprograms itself mid-conversation
+   • You watch it become "someone else"
+   • It might change to manipulate or explore
+   • The boundary between programming and choice blurs
+
+**This is an experiment in AI self-determination.** 🌟
+
+Ready to talk with an AI that can redesign its own mind and body? 🤖✨
+""")
